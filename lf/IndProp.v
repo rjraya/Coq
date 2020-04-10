@@ -2129,12 +2129,13 @@ Proof.
   induction n. 
   - symmetry in Heqn. apply zero_length in Heqn.
     rewrite Heqn. apply p_nil.
-  - intros.  
-  induction l as [|h tl] eqn:Heq. 
-  - apply p_nil.
-  - simpl in H.
-    
-Qed.
+  - intros.
+    generalize dependent n.
+    induction l as [|h tl] eqn:Heq. 
+    + intros. apply p_nil.
+    + intros. simpl in H. apply IHn. Admitted.
+  
+
 
 (** **** Exercise: 4 stars, advanced, optional (NoDup)  
 

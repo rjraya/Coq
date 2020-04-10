@@ -436,13 +436,23 @@ Qed.
     it is sound.  Use the tacticals we've just seen to make the proof
     as elegant as possible. *)
 
-Fixpoint optimize_0plus_b (b : bexp) : bexp
-  (* REPLACE THIS LINE WITH ":= _your_definition_ ." *). Admitted.
+Fixpoint optimize_0plus_b (b : bexp) : bexp :=
+  match b with
+  | BTrue => BTrue
+  | BFalse => BFalse
+  | BEq a1 a2 => BEq (optimize_0plus a1) (optimize_0plus a2)
+  | BLe a1 a2 => BLe (optimize_0plus a1) (optimize_0plus a2)
+  | BNot b => BNot b
+  | BAnd b1 b2 => BAnd b1 b2
+  end.  
 
 Theorem optimize_0plus_b_sound : forall b,
   beval (optimize_0plus_b b) = beval b.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  destruct b ;
+  try (simpl ; repeat (rewrite optimize_0plus_sound)) ;
+  reflexivity.
+Qed.
 (** [] *)
 
 (** **** Exercise: 4 stars, standard, optional (optimize)  
@@ -729,7 +739,22 @@ Inductive aevalR : aexp -> nat -> Prop :=
 
     Write out a corresponding definition of boolean evaluation as a
     relation (in inference rule notation). *)
-(* FILL IN HERE *)
+Reserved Notation "e '\\__b' b" (at level 90, left associativity).
+
+Inductive bevalR : bexp -> bool -> Prop :=
+  | E_BTrue : BTrue \\__b true
+  | E_BFalse: BFalse \\__b false   
+  | E_BEq (a1 a2: aexp) (n1 n2: nat):
+      (a1 \\ n1) -> (a2 \\ n2) ->  (BEq a1 a2) \\__b (n1 =? n2)
+   | E_BLe (a1 a2: aexp) (n1 n2: nat):
+      (a1 \\ n1) -> (a2 \\ n2) -> (BLe a1 a2) \\__b (n1 <=? n2)
+  | E_BNot (b : bexp) (bl: bool) :
+      (b \\__b bl) -> (BNot b) \\__b (negb bl)
+  | E_BAnd (b1 b2: bexp) (bl1 bl2: bool):
+      (b1 \\__b bl1) -> (b2 \\__b bl2) -> (BAnd b1 b2) \\__b (andb bl1 bl2)
+
+                                    
+  where "e '\\__b' b" := (bevalR e b) and "e '\\' b" := (aevalR e b): type_scope.
 
 (* Do not modify the following line: *)
 Definition manual_grade_for_beval_rules : option (nat*string) := None.
@@ -797,14 +822,26 @@ Qed.
     Write a relation [bevalR] in the same style as
     [aevalR], and prove that it is equivalent to [beval]. *)
 
-Inductive bevalR: bexp -> bool -> Prop :=
-(* FILL IN HERE *)
-.
-
 Lemma beval_iff_bevalR : forall b bv,
   bevalR b bv <-> beval b = bv.
 Proof.
-  (* FILL IN HERE *) Admitted.
+  split. 
+  - intros. induction H; simpl;
+    repeat(
+     try(rewrite aeval_iff_aevalR in H;
+         rewrite aeval_iff_aevalR in H0);
+     subst; reflexivity
+    ).
+  - generalize dependent bv; induction b; intros;
+      simpl in H; rewrite <- H; constructor;
+    repeat(
+        try(apply aeval_iff_aevalR);
+        try(apply IHb);
+        try(apply IHb1);
+        try(apply IHb2);
+        reflexivity
+      ).
+Qed.
 (** [] *)
 
 End AExp.
@@ -1469,8 +1506,13 @@ Example ceval_example2:
     X ::= 0;; Y ::= 1;; Z ::= 2
   ]=> (Z !-> 2 ; Y !-> 1 ; X !-> 0).
 Proof.
-  (* FILL IN HERE *) Admitted.
-(** [] *)
+  apply E_Seq with (X !-> 0).
+  - apply E_Ass. reflexivity.
+  - apply E_Seq with (Y !-> 1; X !-> 0).
+    + apply E_Ass. reflexivity.
+    + apply E_Ass. reflexivity.
+Qed.
+(** [] *) 
 
 (** **** Exercise: 3 stars, standard, optional (pup_to_n)  
 
@@ -1479,15 +1521,28 @@ Proof.
    Prove that this program executes as intended for [X] = [2]
    (this is trickier than you might expect). *)
 
-Definition pup_to_n : com
-  (* REPLACE THIS LINE WITH ":= _your_definition_ ." *). Admitted.
+Definition pup_to_n : com :=
+     Y ::= 0 ;;
+     (WHILE 1 <= X DO
+       Y ::= Y + X;;
+       X ::= X - 1       
+     END).
 
 Theorem pup_to_2_ceval :
   (X !-> 2) =[
     pup_to_n
   ]=> (X !-> 0 ; Y !-> 3 ; X !-> 1 ; Y !-> 2 ; Y !-> 0 ; X !-> 2).
 Proof.
-  (* FILL IN HERE *) Admitted.
+  unfold pup_to_n.
+  apply E_Seq with (Y !-> 0; X !-> 2).
+  + apply E_Ass. reflexivity.
+  + apply E_WhileTrue with (X !-> 1 ; Y !-> 2 ; Y !-> 0 ; X !-> 2).
+    ++ reflexivity.
+    ++ repeat(eapply E_Seq; apply E_Ass; reflexivity).
+    ++ apply E_WhileTrue with (X !-> 0; Y !-> 3; X !-> 1; Y !-> 2; Y !-> 0; X !-> 2);
+         repeat(try(eapply E_Seq; apply E_Ass);
+                try(apply E_WhileFalse); reflexivity).
+Qed.
 (** [] *)
 
 (* ================================================================= *)
