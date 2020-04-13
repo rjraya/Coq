@@ -1,0 +1,157 @@
+We formalize a `move only' semantics \cite{wessel2019semantics}.
+
+\begin{itemize}
+	\item We can only assign variables. 
+	\item After assignment, ownership of resource is moved to that variable. 
+	\item Borrowing and mutable references are disallowed.
+\end{itemize}
+
+\subsection{Syntax}
+
+$$S ::= \sk \mid S_1; S_2 \mid \letm{x}{S'} \mid x = e$$
+
+$$e ::= x \mid i \mid e_1 + e_2$$
+
+$$\tau ::= \texttt{Int}$$
+
+Rust syntax \verb|let x = e| is desugared as \texttt{let x in (x = e)} to distinguish variable declaration \verb|x| from assignment of a value to the resource \verb|x| owns. Types added for clarity in borrowing.
+
+\subsection{Semantics}
+
+The semantic domain is $\mathbb{Z}_{ext} := \mathbb{Z} ~\cup ~ \{\perp, -\}$, so variables can hold integers values, be non-declared ($-$) or not assigned $(\perp)$. In particular, \textbf{Var} is the set of all variables, \textbf{Num} is the set of all numbers, \textbf{Add} denotes the set of all pairs from \textbf{Exp} and $\textbf{Exp} = \textbf{Num} \cup \textbf{Var} \cup \textbf{Add}$. We have semantic functions $\mathcal{V}: \textbf{Exp} \to \mathcal{P}(\textbf{Var})$ gathering all variables in an expression and $\mathcal{N}$: $\textbf{Num} \to \mathbb{Z}$ translating syntactic numbers to mathematical numbers.
+
+Memory is represented by a state function $s: \textbf{Var} \to \mathbb{Z}_{ext}$. \textbf{State} is the set of all possible memory arrangements. An evaluation function $\mathcal{A}: \textbf{Exp} \times \textbf{State} \to \mathbb{Z}_{ext}$ takes into account memory in the interpretation of arithmetic expressions. Note that to perform addition we need each addend to be evaluated to an integer. Otherwise the result is undefined $(-)$. 
+
+\subsubsection{Big step semantics}
+
+\begin{tabular}{p{2em}p{18em}p{13em}}
+\skipns &
+\centering$\ns{\texttt{skip}}{s}{s}$ & \medskip\\
+
+\compns &
+\centering \AxiomC{$\ns{S_1}{s}{s'}$}
+\AxiomC{$\ns{S_2}{s'}{s''}$}
+\BinaryInfC{$\ns{S_1; S_2}{s}{s''}$}
+\DisplayProof \medskip& \\
+
+\letns &
+\centering
+\AxiomC{$\ns{S}{s[x\mapsto \perp]}{s'}$}
+\UnaryInfC{$\ns{\letm{x}{S}}{s}{s'[x \mapsto s(x)]}$}
+\DisplayProof \medskip& \\
+
+\assns &
+\centering $\ns{x = e}{s}{s[x \mapsto \letterfunc{A}{e}s][\mathcal{V}(e)\mapsto-]}$ & if $\letterfunc{A}{x}s = \perp$, $\letterfunc{A}{e}s$ 
+\\
+& & $\neq \perp$ and $\letterfunc{A}{e}s \neq -$\medskip\\
+\end{tabular} 
+where $\mathcal{V}(e)\mapsto-$ means $\forall x \in \mathcal{V}(e)$, $x \mapsto -$.
+
+The rule for \texttt{let} states that a \texttt{let}-statement should only declare the variable $x$ as $\perp$. When the body of the let-statement is finished, $x$ should recover its value before the \texttt{let}-statement. For assignment, there are several side-conditions. The first states that \verb|x| must be only declared. The second and third, state that the expression must result in a value.
+
+We have formalized the following properties:
+
+\begin{theorem}[Determinism]
+$\ns{S}{s}{s'} \land \ns{S}{s}{s''} \implies s' = s''$.
+\end{theorem}
+
+\begin{theorem}[Variable allocation]
+$\ns{S}{s}{s'} \implies (\forall y. \letterfunc{A}{y}s = - \implies \letterfunc{A}{y}s' = -)$.
+\end{theorem}
+
+After termination, a program leaves no variables in memory.
+
+\subsubsection{Small step semantics}
+
+The small steps semantics operates on program instructions: \[I ::= S \mid (x,v)\] where $x \in $\textbf{Var}, $v \in \mathbb{Z}_{ext}$. The added command stores in the stack the reset operations produced by let. \\
+
+\begin{tabular}{p{5em}p{18em}p{13em}}
+\loadsos &
+\centering$\sos{\texttt{skip}}{I::L}{s} \Rightarrow \sos{I}{L}{s}$ & \medskip\\
+
+\compsos &
+\centering$\sos{S_1; S_2}{L}{s} \Rightarrow \sos{S_1}{S_2::L}{s}$ & \medskip\\
+
+\asssos &
+\centering $\sos{x = e}{L}{s} \Rightarrow \sos{\texttt{skip}}{L}{s[x \mapsto \letterfunc{A}{e}s][\mathcal{V}(e)\mapsto-]}$ & \medskip\\
+
+\letsos &
+\centering $\sos{\letm{x}{S}}{L}{s} \Rightarrow \sos{S}{(x,s(x))::L}{s[x\mapsto \perp]}$ & \medskip\\
+
+\setsos &
+\centering$\sos{(x,v)}{L}{s} \Rightarrow \sos{\texttt{skip}}{L}{s[x\mapsto v]}$ & \medskip\\
+\end{tabular} 
+
+We formalized the following properties:
+
+\begin{lemma}[Break composition]
+$\sos{S_1; S_2}{L}{s} \Rightarrow ^{*} \sos{\texttt{skip}}{L}{s'} \implies$ 
+
+$\exists s''. \sos{S_1;S_2}{L}{s}  \Rightarrow \sos{S_1}{S_2::L}{s} \Rightarrow ^{*}$
+
+$\Rightarrow ^{*} \sos{\texttt{skip}}{S_2::L}{s''} \Rightarrow \sos{S_2}{L}{s''} \Rightarrow ^{*} \sos{\texttt{skip}}{L}{s'}$ 
+\end{lemma}
+
+\begin{lemma}[Break let]
+$\sos{\letm{x}{S}}{L}{s} \Rightarrow ^{*} \sos{\texttt{skip}}{L}{s'} \implies$
+
+$\exists s''. \sos{\letm{x}{S}}{L}{s} \Rightarrow ^{*} \sos{\texttt{skip}}{(x,s(x))::L}{s''} \Rightarrow$ 
+
+$\Rightarrow \sos{(x,s(x))}{L}{s''} \Rightarrow \sos{\texttt{skip}}{L}{s'}$ 
+\end{lemma}
+
+\begin{proposition}[Stack discipline]
+$\sos{S}{L'}{s} \Rightarrow ^{*} \sos{\texttt{skip}}{L'}{s'} \implies (\forall L. \sos{S}{L}{s} \Rightarrow ^{*} \sos{\texttt{skip}}{L}{s'})$ 
+\end{proposition}
+
+\begin{proposition}[Sequentiality]
+$\sos{S_1}{L}{s} \Rightarrow ^{*} \sos{\sk}{L}{s} \implies \sos{S_1;S_2}{L}{s}$ $\Rightarrow ^{*} \sos{S_2}{L}{s}$
+\end{proposition}
+
+\begin{theorem}[Determinism]
+$\sos{S}{L}{s} \Rightarrow ^{*} \sos{\texttt{skip}}{L}{s'} \land \sos{S}{L}{s} \Rightarrow ^{*} \sos{\texttt{skip}}{L}{s''} \implies s' = s''$.
+\end{theorem}
+
+\subsubsection{Compile time check}
+
+Big step semantics is equivalent to small step semantics (which dropped side conditions for assignment) plus a compile time check of these dropped conditions. The check performs no computation and uses an abstract \emph{reduced state} $r: \textbf{Var} \to \{-, \perp, \star \}$ where $\star$ represents an unspecified concrete value and \textbf{RState} is the set of reduced states. To each state, corresponds an abstract reduced state replacing concrete integers by $\star$. We say both states are \emph{related}. Here are the rules of the \emph{compile time checker}:
+\begin{align*}
+\cc{\texttt{skip}}{\texttt{Nil}}{r} & \to \texttt{true}  \\
+\cc{\texttt{skip}} {P::L}{ r}       & \to \cc{P}{L}{r}  \\
+\cc{S_1; S_2}{L}{r}                 & \to \cc{S_1}{S_2::L}{r}  \\
+\cc{x=e}{L}{r}                     & \to \cc{\sk}{L}{r[x\mapsto \star][\mathcal{V}(e) \mapsto -]} \\
+                                    & \textrm{if }r(x) = \perp \textrm{ and } \forall y \in \mathcal{V}(e), r(y) = \star \\
+                                    & \to \texttt{false} \textrm{ otherwise}\\
+\cc{\letm{x}{S}}{L}{r} & \to \cc{S}{(x,r(x))::L}{r[x\mapsto \perp]} \\
+\cc{(x,v)}{L}{r}                    & \to \cc{\texttt{skip}}{L}{r[x \mapsto v]}
+\end{align*}
+
+We formalized the following properties:
+
+\begin{theorem}[Termination]
+The compile checker always terminates.
+\end{theorem}
+
+\begin{theorem}[Semantic equivalence]
+$\ns{S}{s}{s'} \iff \exists L. \sos{S}{L}{s} \Rightarrow ^{*} \sos{\sk}{L}{s'} \land \cc{S}{L}{\text{reduced } s} \to^{*} \tr$ 
+\end{theorem}
+
+\subsection{Safety}
+
+Safety proofs can be given following \cite{wright1994syntactic}.
+
+\begin{theorem}[Preservation]
+$\cc{S}{L}{\text{reduced } s} \to ^* \texttt{true} \land \sos{S}{L}{s} \Rightarrow \sos{S'}{L'}{s'} \implies$ 
+
+$\cc{S'}{L'}{\text{reduced } s'} \to ^* \texttt{true}$.
+\end{theorem}
+
+\begin{theorem}[Progress]
+$\cc{S}{L}{r} \to ^* \texttt{true} \implies$ 
+
+$S = \texttt{skip} \land L = \texttt{Nil} \lor \forall \text{concrete } r. \exists S',L',s'. \sos{S}{L}{s} \Rightarrow \sos{S'}{L'}{s'}$ 
+\end{theorem}
+
+ 
+
+

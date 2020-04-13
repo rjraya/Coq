@@ -1,0 +1,48 @@
+This is BibTeX, Version 0.99d (MiKTeX 2.9.7350)
+Capacity: max_strings=4000, hash_size=5000, hash_prime=4253
+The top-level auxiliary file: main.aux
+The style file: apalike.bst
+Database file #1: bibli.bib
+Warning--empty journal in wessel2019semantics
+You've used 2 entries,
+            1935 wiz_defined-function locations,
+            483 strings with 3962 characters,
+and the built_in function-call counts, 741 in all, are:
+= -- 69
+> -- 31
+< -- 1
++ -- 14
+- -- 10
+* -- 63
+:= -- 135
+add.period$ -- 5
+call.type$ -- 2
+change.case$ -- 15
+chr.to.int$ -- 2
+cite$ -- 3
+duplicate$ -- 27
+empty$ -- 49
+format.name$ -- 14
+if$ -- 136
+int.to.chr$ -- 1
+int.to.str$ -- 0
+missing$ -- 2
+newline$ -- 12
+num.names$ -- 6
+pop$ -- 14
+preamble$ -- 1
+purify$ -- 15
+quote$ -- 0
+skip$ -- 22
+stack$ -- 0
+substring$ -- 47
+swap$ -- 1
+text.length$ -- 0
+text.prefix$ -- 0
+top$ -- 0
+type$ -- 12
+warning$ -- 1
+while$ -- 6
+width$ -- 0
+write$ -- 25
+(There was 1 warning)

@@ -1,0 +1,13 @@
+\begin{thebibliography}{}
+
+\bibitem[Wessel et~al., 2019]{wessel2019semantics}
+Wessel, N., Wiedijk, F., and Schoolderman, M. (2019).
+\newblock The semantics of ownership and borrowing in the rust programming
+  language.
+
+\bibitem[Wright and Felleisen, 1994]{wright1994syntactic}
+Wright, A.~K. and Felleisen, M. (1994).
+\newblock A syntactic approach to type soundness.
+\newblock {\em Information and computation}, 115(1):38--94.
+
+\end{thebibliography}
