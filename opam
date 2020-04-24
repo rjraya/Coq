@@ -1,0 +1,7 @@
+opam pin add coq 8.6
+
+opam switch ---
+eval $(opam env)
+
+start from terminal
+

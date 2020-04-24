@@ -1,0 +1,13 @@
+From Coq Require Import Strings.String.
+
+Ltac dstrings :=
+  match goal with
+  | [ |-  context[string_dec ?x1 ?x2] ] =>
+    destruct (string_dec x1 x2)
+  end.
+
+Ltac dhyps :=
+  match goal with
+  | [ H: ?A /\ ?B |- _ ] => destruct H
+  | [ H: ?A \/ ?B |- _ ] => destruct H
+  end.

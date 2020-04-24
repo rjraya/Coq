@@ -6,8 +6,6 @@ Following "The Semantics of Ownership and Borrowing in the Rust Programming Lang
 *)
 
 From Coq Require Import Bool.Bool.
-From Coq Require Import Init.Nat.
-From Coq Require Import Arith.Arith.
 From Coq Require Import ZArith.Int.
 From Coq Require Import Arith.EqNat.
 From Coq Require Import omega.Omega.
@@ -17,6 +15,7 @@ From Coq Require Import Logic.FunctionalExtensionality.
 (* for specific induction *)
 Require Import Coq.Program.Equality.
 Require Import Capabilities.big_step.
+Require Import Capabilities.CustomTactics.
 
 Import ListNotations.
 Open Scope string_scope.
@@ -56,7 +55,7 @@ Lemma deterministic_one_step
   (conf ⟹__s conf1) ->
   (conf ⟹__s conf2) ->
   conf1 = conf2.
-Proof. intros. induction H; inversion H0; subst; reflexivity. Qed.
+Proof. induction 1; repeat lights || invert_pred small_step. Qed.
 
 Inductive star {A : Type} (r : A -> A -> Prop) : A -> A -> Prop :=
 | star_refl x : star r x x
@@ -64,24 +63,21 @@ Inductive star {A : Type} (r : A -> A -> Prop) : A -> A -> Prop :=
 
 Notation "x '⟹__s*' y" := (star small_step x y) (at level 20) : move_scope.
 
+Hint Constructors star : star.
+
 Lemma star_trans {A} (r : A -> A -> Prop) :
   forall x y z, star r x y -> star r y z -> star r x z.
 Proof.
-  intros x y z H1 H2.
+  intros until 1.
   generalize dependent z.
-  induction H1; intros.
-  - apply H2.
-  - apply ((star_step r x y z0) H (IHstar z0 H2)).
+  induction H; repeat clarify || eapply star_step.
 Qed.
 
 Lemma star_step' {A} (r : A -> A -> Prop) :
   forall x y, r x y -> star r x y.
-Proof.
-  intros x y H.
-  apply (star_step r x y y).
-  + apply H.
-  + apply star_refl.
-Qed.
+Proof. light. eauto using star_step, star_refl. Qed.
+
+Hint Resolve star_step' : star.
 
 Inductive splus {A : Type} (r : A -> A -> Prop) : A -> A -> Prop :=
 | plus_step x y : r x y -> splus r x y
@@ -91,22 +87,15 @@ Notation "x '⟹__s+' y" := (splus small_step x y) (at level 30) : move_scope.
 
 Lemma plus_star {A} (r : A -> A -> Prop) :
   forall x y, splus r x y -> star r x y.
-Proof.
-  intros x y H.
-  induction H.
-  - apply star_step'. apply H.
-  - eapply star_step. apply H. apply H0.
-Qed.
+Proof. inversion 1; lights; eauto with star. Qed.
 
 Lemma plus_right {A} (r : A -> A -> Prop) :
   forall x y z, star r x y -> r y z -> splus r x z.
 Proof.
-  intros x y z H1 H2.
-  induction H1.
-  - apply plus_step. apply H2.
-  - eapply plus_steps. apply H.
-    eapply star_trans. apply H1.
-    eapply star_step. apply H2. apply star_refl.
+  induction 1;
+    apply plus_step || 
+      light; apply_anywhere (plus_star r); eapply plus_steps;
+      clarify; lights.
 Qed.
   
 (* Traces *)
@@ -117,73 +106,35 @@ Definition trace
     (f 0 = c1) /\ (f m = c2) /\ 
     (forall (idx:nat), (0 <= idx /\ idx < m) -> f idx ⟹__s f (S idx)).
 
-Lemma small_trace (i1 i2 : instruction) (L1 L2 : list) (s1 s2 : state):
-  (i1, L1, s1) ⟹__s* (i2, L2,s2) ->
-  (exists (f : nat -> (instruction * list * state)) (m : nat),
-      trace f m (i1,L1,s1) (i2,L2,s2)).
-Proof.
-  intros. unfold trace.
-  dependent induction H generalizing i1 i2 L1 L2 s1 s2.
-  - exists (fun n => (i2,L2,s2)). exists 0.
-    split. reflexivity. split. reflexivity. 
-    intros. omega.
-  - destruct y as [p s']; destruct p as [i' l'].
-    destruct (IHstar i' i2 l' L2 s' s2) as [g]; try(reflexivity).
-    destruct H1 as [m]. 
-    exists (fun n => match n with
-                   | 0 => (i1, L1,s1)
-                   | S n' => g n' end). exists (S m).
-    destruct H1 as [eq1 [eq2 eq3]].
-    split; try(reflexivity). split. 
-    + destruct (S m) eqn: m_plus_1.
-      ++ omega. 
-      ++ apply eq2.
-    + intros.
-      destruct idx.
-      ++ simpl. rewrite eq1. apply H. 
-      ++ simpl.
-        assert(0 <= idx < m). { omega. }
-        apply (eq3 idx H2).
-Qed.
+Lemma constant_trace
+  (conf: instruction * list * state):
+  trace (fun n => conf) 0 conf conf.
+Proof. unfold trace; lights; omega. Qed.
 
-Lemma trace_connected
-      (f: nat -> (instruction * list * state)) (m:nat)
-      (c1 c2: instruction * list * state) :
-  trace f m c1 c2 -> (forall j, 0 <= j <= m -> (f j ⟹__s* c2 /\ c1 ⟹__s* f j)).
-Proof.
-  intros. unfold trace in H. destruct H as [H1 [H2 H3]]. split.
-  - generalize dependent c2. 
-    induction m; intros. 
-    + assert(j = 0). { omega. } subst. apply star_refl. 
-    + destruct (Nat.eqb_spec j (S m)).
-      ++ subst. apply star_refl.
-      ++ assert(eq1: 0 <= j <= m). { omega. }
-        assert(eq2: forall idx : nat, 0 <= idx < m -> f idx ⟹__s f (S idx)).
-        { intros. apply H3. omega. }
-        assert(f j ⟹__s* f m).
-        { apply ((IHm eq2 eq1) (f m)). reflexivity. }
-        assert(f m ⟹__s* f (S m)).
-        { apply star_step'. apply (H3 m). omega. }
-        subst. eapply star_trans. apply H. apply H4.
-  - generalize dependent c2. 
-    induction j; intros. 
-    + subst. apply star_refl.
-    + assert(c1 ⟹__s* f j). { eapply IHj. omega. apply H2. }
-      assert(f j ⟹__s* f (S j)). { apply star_step'. apply H3. omega. }
-      eapply star_trans. apply H. apply H4.
-Qed.
+Lemma zero_length_trace
+  (f: nat -> (instruction * list * state))
+  (conf1 conf2: instruction * list * state):
+  trace f 0 conf1 conf2 -> conf1 = conf2. 
+Proof. unfold trace; lights. Qed.
 
-Corollary small_trace'
-  (i1 i2 : instruction) (L1 L2 : list) (s1 s2 : state)
-  (f : nat -> (instruction * list * state)) (m : nat):
-  trace f m (i1,L1,s1) (i2,L2,s2) ->
-  (i1, L1, s1) ⟹__s* (i2, L2,s2).
+Lemma nonzero_length_trace
+  (m: nat) (f: nat -> (instruction * list * state))
+  (conf1 conf2: instruction * list * state):
+  trace f (S m) conf1 conf2 -> (conf1 ⟹__s (f 1)). 
+Proof. unfold trace; lights; apply_any; omega. Qed.
+
+Lemma move_trace_left
+  (f: nat -> (instruction * list * state)) (m:nat)
+   (c0 c1 c2 : instruction * list * state):    
+   (c0 ⟹__s c1) ->
+   trace f m c1 c2 ->
+   trace (fun n  =>
+            match n with
+            | O => c0
+            | S n' => f n'
+            end) (S m) c0 c2.
 Proof.
-  intros. 
-  destruct (trace_connected f m (i1,L1,s1) (i2,L2,s2) H 0).
-  - omega.
-  - unfold trace in H. destruct H as [eq1 [eq2 eq3]].
-    rewrite eq1 in H0. apply H0.
+  unfold trace; repeat lights || destruct_match || apply_any || omega.
 Qed.
 
 Lemma move_trace_right
@@ -191,12 +142,38 @@ Lemma move_trace_right
    (c1 c2 : instruction * list * state):    
    trace f (S m) c1 c2 ->
    trace (fun n  => f (S n)) (m) (f 1) c2.
+Proof. unfold trace; lights; apply_any; omega. Qed.
+
+Lemma small_trace
+  (i1 i2 : instruction) (L1 L2 : list) (s1 s2 : state):
+  (i1, L1, s1) ⟹__s* (i2, L2,s2) ->
+  (exists (f : nat -> (instruction * list * state)) (m : nat),
+      trace f m (i1,L1,s1) (i2,L2,s2)).
 Proof.
-  intros. unfold trace. unfold trace in H.
-  destruct H as [H1 [H2 H3]].
-  split. reflexivity. split.
-  - apply H2.
-  - intros. apply (H3 (S idx)). omega. 
+  induction 1; try do 2 destruct_exists; do 2 eexists;
+   apply constant_trace || (eapply move_trace_left; clarify). 
+Qed.
+
+Lemma small_trace'
+  (m : nat) (conf1 conf2 : instruction * list * state)
+  (f : nat -> (instruction * list * state)):
+  trace f m conf1 conf2 ->
+  conf1 ⟹__s* conf2.
+Proof.
+  Ltac rewrite_trace :=
+    match goal with
+    | [H: trace _ 0 ?conf1 ?conf2 |- _ ] =>
+      apply zero_length_trace in H; try rewrite H
+    | [H: trace _ (S ?m) ?conf1 ?conf2 |- _ ] =>
+      pose proof H as H';
+      eapply nonzero_length_trace in H;
+      apply move_trace_right in H'
+    end.
+  
+  generalize dependent conf1.
+  generalize dependent f. 
+  induction m; intros; rewrite_trace;
+   try apply star_refl; try eapply star_step; clarify.
 Qed.
 
 Lemma compute_trace_step
@@ -207,14 +184,67 @@ Lemma compute_trace_step
   trace (fun n => f (S n)) m conf conf2.
 Proof.
   intros.
-  destruct conf1 as [[c1 l1] s1].
-  destruct conf2 as [[c2 l2] s2].
-  assert((c1,l1,s1) ⟹__s f 1).
-  { destruct H as [eq1 [eq2 eq3]]. rewrite <- eq1. apply eq3. omega. }
-  assert(f 1 = conf).
-  { eapply deterministic_one_step. apply H1. apply H0. }
-  rewrite <- H2. 
-  eapply move_trace_right. apply H.
+  Ltac duplicate_trace :=
+    match goal with
+    | [ H: trace ?f ?m ?conf1 ?conf2 |- _ ] =>
+      pose proof H as Hd
+    end.
+
+  Ltac one_step_determinism :=
+    match goal with
+    | [ H1: (?conf ⟹__s ?conf1) ,
+        H2: (?conf ⟹__s ?conf2) |- _ ] =>
+      pose proof (deterministic_one_step conf conf1 conf2 H1 H2)
+    end.
+  
+  duplicate_trace.
+  apply_anywhere move_trace_right.
+  apply_anywhere nonzero_length_trace.
+  one_step_determinism.
+  rewrite_any.
+  apply_any.
+Qed.
+
+Lemma subtraces_right
+  (f: nat -> (instruction * list * state)) (m j:nat)
+  (conf1 conf2: instruction * list * state) :
+  trace f m conf1 conf2 ->
+  0 <= j <= m ->
+  trace (fun n => f (n+j)) (m-j) (f j) conf2.
+Proof.
+  Ltac extract_trace :=
+    match goal with
+    | [ H: trace ?f ?m ?conf1 ?conf2 |- _ ] =>
+      pose proof H as HH;
+      destruct HH as [H1' [H2' H3']]
+    end.
+  
+  intros; induction j; extract_trace;
+  repeat (split; lights ;
+   repeat (try (apply f_equal)) ; try apply_any ; omega). 
+Qed.
+
+Lemma subtraces_left
+  (f: nat -> (instruction * list * state)) (m j:nat)
+  (conf1 conf2: instruction * list * state) :
+  trace f m conf1 conf2 ->
+  0 <= j <= m ->
+  trace (fun n => f n) (j) conf1 (f j).
+Proof.
+  intros; destruct j; extract_trace;
+  split; lights; try apply_any; omega.
+Qed.       
+
+Lemma trace_connected
+      (f: nat -> (instruction * list * state)) (m:nat)
+      (c1 c2: instruction * list * state) :
+  trace f m c1 c2 ->
+  (forall j, 0 <= j <= m -> (f j ⟹__s* c2 /\ c1 ⟹__s* f j)).
+Proof.
+  intros; split;
+    eapply small_trace';
+    (eapply subtraces_right || eapply subtraces_left);
+     apply_any.
 Qed.
 
 (* Helper measure that decreases on traces *)
@@ -230,6 +260,8 @@ Fixpoint atomic_commands (c': com) :=
 Lemma atomic_positive (c': com) : atomic_commands c' > 0.
 Proof. induction c'; simpl; omega. Qed.
 
+Hint Rewrite atomic_positive : ariths.
+
 Fixpoint command_number (l: list) :=
   match l with
   | [] => 0
@@ -239,78 +271,75 @@ Fixpoint command_number (l: list) :=
 
 Lemma commands_gr_1 (i': instruction): command_number ([i']) > 0.
 Proof.
-  simpl. destruct i' as [| c']. omega.
-  assert(atomic_commands c' > 0). { apply atomic_positive. } omega. 
+  lights. destruct_match. omega.
+  rewrite <- plus_n_O. apply atomic_positive.
 Qed.
 
-Definition measure (instr: instruction) (L: list) :=
-  command_number [instr] + command_number L.       
-   
+Definition measure (conf: instruction * list * state) :=
+  command_number [fst (fst (conf))] + command_number (snd (fst (conf))).       
 Lemma step_decrease
-  (instr1 instr2 : instruction)
-   (L1 L2 : list) (s1 s2 : state) :
-  ((instr1, L1, s1) ⟹__s (instr2, L2, s2)) ->
-  (measure instr2 L2 <= measure instr1 L1).
+  (conf1 conf2 : instruction * list * state) :
+  (conf1 ⟹__s conf2) -> (measure conf2 <= measure conf1).
 Proof.
-  intros. unfold measure.
-  destruct instr1.
-  - inversion H. subst. auto. 
-  - inversion H; subst; try(auto).
-    + simpl. destruct instr2.
-      ++ auto.
-      ++ omega.
-    + simpl. omega.
-    + simpl. omega.
+  (repeat clarify || destruct_match);
+    invert_pred_unbounded (small_step);
+    try clarify;
+    try omega.
 Qed.
 
 Lemma chain_decrease
-   (instr1 instr2 : instruction)  
-   (L1 L2 : list) (s1 s2 : state) :
-  ((instr1, L1, s1) ⟹__s* (instr2, L2, s2)) ->
-  (measure instr2 L2 <= measure instr1 L1).
-Proof.
-  intros H. unfold measure. 
-  dependent induction H generalizing instr1 L1 s1 instr2 L2 s2.
+   (conf1 conf2 : instruction * list * state) :
+  (conf1 ⟹__s* conf2) -> (measure conf2 <= measure conf1).
+Proof.  
+  induction 1.
   + auto.
-  + intros. subst.
-    destruct y as [p3 s3]. destruct p3 as [instr3 L3].
-    assert (H2: command_number [instr3] + command_number L3 <=
-            command_number [instr1] + command_number L1).
-    { eapply step_decrease. apply H. }
-    assert (H3: command_number [instr2] + command_number L2 <=
-                command_number [instr3] + command_number L3).
-    { eapply IHstar. auto. auto. }
-    omega.
+  + eapply le_trans. apply_any. apply step_decrease. lights.
 Qed.
 
+Lemma skip_decrease_step
+ (instr2 : instruction) (L1 L2 : list) (s1 s2 : state) :
+  ((c Skip, L1, s1) ⟹__s (instr2, L2, s2)) -> 
+  (measure (instr2, L2, s2) < measure (c Skip, L1, s1)).
+Proof. inversion 1. lights. destruct_match; omega. Qed.
+    
 Lemma skip_decrease
  (instr2 : instruction) (L1 L2 : list) (s1 s2 : state) :
   ((c Skip, L1, s1) ⟹__s+ (instr2, L2, s2)) -> 
-  (measure instr2 L2 < measure (c Skip) L1).
+  (measure (instr2, L2, s2) < measure (c Skip, L1, s1)).
 Proof.
- intros H. unfold measure.
- remember (c Skip, L1, s1) as conf1.
- remember (instr2, L2, s2) as conf2. 
- destruct H as [H1 | H2 ] eqn: H3. 
- - intros. subst. inversion s. subst. simpl.
-   destruct instr2. omega. omega.
-  - intros. subst. inversion s. subst.
-    assert(command_number [I] + command_number L <
-           command_number [c Skip] + command_number (I::L)).
-    { simpl. destruct I.
-      + auto.
-      + omega. }
-    assert(command_number [instr2] + command_number L2 <=
-           command_number [I] + command_number L).
-    { eapply chain_decrease. apply s0.  }
-    omega.
+  inversion 1; clarify.
+  - apply skip_decrease_step. apply_any.
+  - eapply le_lt_trans.
+    + apply chain_decrease; apply_any.
+    + repeat destruct_pairs; eapply skip_decrease_step; apply_any.
 Qed.
 
 Corollary pop_changes_stacks_identity
   (l l': list) (s s': state) (i': instruction):
-  (c Skip,l,s) ⟹__s+ (i',l',s') -> l <> l'.
+  (c Skip,l,s) ⟹__s+  (i',l',s') -> l <> l'.
 Proof.
-  intros.
+  Ltac apply_measure :=
+    match goal with
+    | [H:  (c Skip, ?L1, ?s1) ⟹__s+ (?instr2, ?L2, ?s2) |-
+       _ ] =>
+      pose proof (skip_decrease ?instr2 ?L1 ?L2 ?s1 ?s2 H)
+    end.
+  light.
+apply_measure .
+  pose proof (skip_decrease i' l l' s s' H).
+  
+  
+  let v := (splus small_step (c Skip, l, s) (c Skip, l, s)) in 
+   match v with
+   | _ _ _ _ => idtac "succ"
+   end.
+   idtac "succ"
+  end. 
+  
+  apply_measure.
+  pose proof (skip_decrease i' l l' s s' H).
+  
+  apply skip_decrease.
   assert(measure i' l' < measure (c Skip) l).
   { eapply skip_decrease. apply H. }
   assert(command_number [i'] > 0). { apply commands_gr_1. }
