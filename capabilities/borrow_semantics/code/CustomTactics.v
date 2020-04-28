@@ -1,19 +1,5 @@
 From Coq Require Import Strings.String.
 
-Ltac dhyps :=
-  match goal with
-  | [ H: ?A /\ ?B |- _ ] => destruct H
-  | [ H: ?A \/ ?B |- _ ] => destruct H
-  end.
-
-Lemma test1 : forall P, P \/ P -> P.
-Proof.
-  intros.
-  dhyps; apply H. 
-Qed.
-
-(*Jad's tactics*)
-
 Require Import PeanoNat.
 Require Import Coq.Strings.String.
 Require Import Coq.Lists.List.
@@ -34,7 +20,7 @@ Ltac destruct_pairs :=
 
 Ltac destruct_exists :=
   match goal with
-  | H: exists x, _ |- _ => let freshX := fresh x in destruct H as [ freshX ]
+  | H: context[exists x, _] |- _ => let freshX := fresh x in destruct H as [ freshX ]
   end.
 
 Ltac destruct_refinements :=
@@ -229,6 +215,11 @@ Ltac eapply_anywhere f :=
 Ltac rewrite_anywhere f :=
   match goal with
   | H: _ |- _ => rewrite f in H
+  end.
+
+Ltac rewrite_back_anywhere f :=
+  match goal with
+  | H: _ |- _ => rewrite <- f in H
   end.
 
 Ltac erewrite_anywhere f :=

@@ -1,0 +1,41 @@
+In this paper we only concern ourselves with a subset of Rust, as the whole of Rust is too complicated for a thesis of this size. We are interested mainly in the concepts of ownership, borrowing and lifetimes. 
+
+We desugar some of Rust for clarity and to ease the reasoning about these parts. For example, it is customary in Rust to not write \verb|return| when returning something. However, we will adopt the convention that it is needed to write this out. 
+
+We have the following syntax: 
+
+Statements ($s$):
+$$S ::= \textrm{skip} \mid S_1; S_2 \mid a: \textrm{let } x:\tau \textrm{ in } S \mid x := e$$
+Expressions ($e$):
+$$e ::= x \mid \&a\textrm{ }e \mid \&\textrm{mut}a ~e \mid i \mid e_1 + e_2$$ 
+Types ($\tau$): 
+$$\tau ::= \textrm{Int} \mid \&a ~\tau \mid \&a \textrm{ mut } \tau$$
+where $x$ is a variable, $i$ an integer and $a$ a lifetime. 
+
+This syntax is very simple, but enough for us to say something useful about ownership. We use only one data type, as more data types will add no additional interesting facts for ownership, but will cloud our syntax definitions. 
+
+In particular, take note of the syntax for let. We split a statement such as \verb|let x = 5| in \verb|let x in (x = 5)| (brackets added for clearity). This can be done for every type of let-statement. It was done to show that there are actually two steps in a statement such as \verb|let x = 5|. First of all, the variable \verb|x| is declared. Then, a value is assigned to this \verb|x|. 
+
+After the splitting (when necessary), we've 'desugared' the statement in a similar way as was done in \ref{desugar}. This is done to make lifetimes explicit. That means we change \verb|let x in (x = 5)| to \verb|a: {let x in (x = 5)}|. We do not add the \verb|'| for the \verb|a|, as we will not be talking about generics and this only complicates the syntax. Lastly, we desugar more, to also include the type $\tau$, so that the previous statement becomes \verb|a: {let x:i32 in (x = 5)}|. 
+
+In order to illustrate this, let's write the following program (taken from \ref{desugar}) in our syntax: 
+
+\begin{minted}[linenos, frame=lines]{rust}
+let x = 0;
+let y = &x;
+let z = &y;
+\end{minted}
+
+\begin{minted}[linenos, frame=lines]{rust}
+a: {
+    let x: Int in x = 0;
+    b: {
+        let y: &b Int in y = &b x;
+        c: {
+            let z: &c &b Int in = &c y;
+        }
+    }
+}
+\end{minted}
+
+This looks a lot like the desugaring in \ref{desugar}, but has no \verb|'| to indicate lifetimes. 

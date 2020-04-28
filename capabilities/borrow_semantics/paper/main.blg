@@ -1,0 +1,46 @@
+This is BibTeX, Version 0.99d (MiKTeX 2.9.7350)
+Capacity: max_strings=4000, hash_size=5000, hash_prime=4253
+The top-level auxiliary file: main.aux
+The style file: apalike.bst
+Database file #1: bibli.bib
+You've used 10 entries,
+            1935 wiz_defined-function locations,
+            529 strings with 5588 characters,
+and the built_in function-call counts, 4555 in all, are:
+= -- 445
+> -- 207
+< -- 8
++ -- 76
+- -- 72
+* -- 376
+:= -- 773
+add.period$ -- 34
+call.type$ -- 10
+change.case$ -- 85
+chr.to.int$ -- 10
+cite$ -- 10
+duplicate$ -- 183
+empty$ -- 309
+format.name$ -- 84
+if$ -- 912
+int.to.chr$ -- 1
+int.to.str$ -- 0
+missing$ -- 11
+newline$ -- 53
+num.names$ -- 30
+pop$ -- 90
+preamble$ -- 1
+purify$ -- 86
+quote$ -- 0
+skip$ -- 135
+stack$ -- 0
+substring$ -- 283
+swap$ -- 38
+text.length$ -- 4
+text.prefix$ -- 0
+top$ -- 0
+type$ -- 58
+warning$ -- 0
+while$ -- 37
+width$ -- 0
+write$ -- 134

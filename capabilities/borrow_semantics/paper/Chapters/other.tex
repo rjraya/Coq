@@ -1,0 +1,127 @@
+In this chapter, we will briefly look at some other extensions that could be done to our language. This will mostly be informal and `quick-and-dirty', just to give the reader an idea of how what we have done here could be expanded. 
+
+\section{While}
+It is interesting to add some form of looping, as that makes it for example possible for a program to not ever finish. As said in the introduction of this thesis, we want the compile time check to always finish, even if the program itself does not finish. 
+
+For example, the very simple program 
+
+\begin{minted}[linenos, frame=lines]{rust}
+fn main() {
+    while true {
+        print!("Hello world!")
+    }
+}
+\end{minted}
+
+produces no error. \footnote{It does give the warning \texttt{denote infinite loops with `loop { ... }`}, but as said in the introduction, we will only be trying to model actual errors.}
+
+If we add while-loops to our syntax, we get 
+
+\begin{definition}
+\label{statementswhile}
+A statement $S$ is defined recursively by:
+$$S ::= \textrm{skip} \mid S_1; S_2 \mid a: \textrm{let } x:\tau \textrm{ in } S' \mid x = e \mid \whi{S'}$$
+where $e$ is an expression, $\tau$ is a type and $S_1$, $S_2$ and $S'$ are again statements.
+\end{definition}
+
+We will not formally define booleans here, but just use them. We assume that the reader has some idea of what booleans are and what they are supposed to do in our while loop here. We refer the interested reader to \cite{nielson1992semantics} for an elaborate, formal definition of booleans.
+
+Now we look at the small step semantics.
+
+\begin{definition}
+\label{oswhile}
+In addition to the rules in \ref{osb}, we define the following two semantic derivation rules:
+
+$$\sosb{\whi{S'}}{L}{s}{M} \Rightarrow \sosb{S'}{\whi{S'}::L}{s}{M}$$ 
+if $b$ evaluates to \texttt{true}. (named [whilet$_{\textrm{os}}$])
+
+$$\sosb{\whi{S'}}{L}{s}{M} \Rightarrow \sosb{\texttt{skip}}{L}{s}{M}$$ 
+if $b$ evaluates to \texttt{false}. (named [whilef$_{\textrm{os}}$])
+\end{definition}
+
+Of course, the intersting part is how we will deal with the while loop in the compile time check. The Rust compiler simply does not accept any non-mutable variable assignments in a while loop, even if the assignment happens only once or not even at all, as in the following program.
+
+\begin{minted}[linenos, frame=lines]{rust}
+let x;
+while false {
+    x = 0
+}
+\end{minted}
+
+This program gives the error \texttt{re-assignment of immutable variable `x}.
+
+So we will have to keep track of whether we are in a while loop or not. We can do that for example by adding and extra little bit of information to our derivation system, so that our derivation system has rules of the form 
+
+$$\ccwhile{S}{L}{s}{M}{b} \to \ccwhile{S'}{L'}{s'}{M'}{b'}$$
+
+where $b$ and $b'$ are booleans that are either \texttt{true} or \texttt{false}. We use the boolean to indicate whether we are in a while loop or not. 
+
+\begin{definition}
+\label{compiletimecheckerwhile}
+The \emph{compile time checker} is a derivation system that has the following rules
+\begin{align*}
+\ccwhile{\texttt{skip}}{\texttt{Nil}}{r}{M}{b} & \to \texttt{true}  \\
+\ccwhile{\texttt{skip}}{P::L}{r}{M}{b}      & \to \ccwhile{P}{L}{r}{M}{b}  \\
+\ccwhile{S_1; S_2}{L}{r}{M}{b}                 & \to \ccwhile{S_1}{S_2::L}{r}{M}{b}  \\
+\ccwhile{x=e}{L}{r}{M}{b}                    & \to \ccwhile{\texttt{skip}}{L}{r[x\mapsto \star][\mathcal{V}(e) \mapsto -]}{M[\forall \textit{y} \in B(\textit{e}), \textit{y}\mapsto M(\textit{y})\cup \{\texttt{bor} \} ][\textit{x} \mapsto M(\textit{x}) \cup B(\textit{e})]}{b} \\
+                                    & \textrm{if } \neg b, \texttt{mut} \in \mathcal{M}(x), r(x) = & \perp \textrm{ or } r(x) = \star, \\ &  \forall y \in \mathcal{C}(e), r(y) = \star \textrm{ and } \forall y \in \mathcal{B}(e), \neg \texttt{bor} \in \mathcal{M}(e) \\
+                                    & \textrm{if } \neg b, \neg \texttt{mut} \in \mathcal{M}(x),  r(x) = \perp,  \\ & \forall y \in \mathcal{C}(e), r(y) = \star \textrm{ and } \forall y \in \mathcal{B}(e), \neg \texttt{bor} \in \mathcal{M}(e) \\
+                                    & \textrm{if } b, \texttt{mut} \in \mathcal{M}(x), r(x) = \perp \textrm{ or } r(x) = \star, \forall y \in \mathcal{C}(e), r(y) = \star, \mathcal{B}(e) = \emptyset \textrm{ and } \mathcal{V}(e) = \emptyset \\
+                                    & \to \texttt{false} \textrm{ otherwise}\\
+\ccwhile{\letm{x}{S}}{L}{r}{M}{b} & \to \ccwhile{S}{(x,r(x),\mathcal{M}(x))::L}{r[x\mapsto \perp]}{M}{b} \\
+\ccwhile{\letmut{x}{S}}{L}{r}{M}{b} & \to \ccwhile{S}{(x,r(x),\mathcal{M}(x))::L}{r[x\mapsto \perp]}{M[\texttt{x}\mapsto\{\texttt{mut}\}]}{b} \\
+\ccwhile{(x,v,m)}{L}{r}{M}{b}                    & \to \ccwhile{\texttt{skip}}{L}{r[x \mapsto v]}{M[\forall \textit{y} \in M(\textit{x})\cap\textbf{Var}, \textit{y} \mapsto M(\textit{y}) \setminus \{\texttt{bor}\}][\texttt{x} \mapsto \textrm{m}]}{b} \\
+\ccwhile{\whi{S}}{L}{r}{M}{b} & \to \ccwhile{S}{(b)::L}{r}{M}{\texttt{true}} \\
+\ccwhile{(b')}{L}{r}{M}{b} & \to \ccwhile{\texttt{skip}}{L}{r}{M}{b'}
+\end{align*}
+\end{definition}
+
+\subsection{Memory safety}
+For progress and preservation we will only look at some of the more interesting cases. 
+
+\begin{theorem}
+\label{preservationwhile}
+If $\ccwhile{S}{L}{r}{M}{b} \to ^* \texttt{true}$ and $\sosb{S}{L}{s}{M} \Rightarrow \sosb{S'}{L'}{s'}{M'}$ with $r$ equivalent to $s$, then there is an $r'$ that is equivalent to $s'$ and we have $\ccwhile{S'}{L'}{r'}{M'}{b'} \to ^* \texttt{true}$.
+\end{theorem}
+
+\begin{proof}
+We assume $\soswhile{S}{L}{s}{M}{b} \Rightarrow \sosb{S'}{L'}{s'}{M'}{b'}$. We look at the different possible rules $\Rightarrow$. 
+\begin{itemize}[noitemsep]
+    \item Klopt echt voor geen meter.... $\sosb{\whi{S'}}{L}{s}{M} \Rightarrow \sosb{S'}{\whi{S'}::L}{s}{M}$. We assume $\ccwhile{\whi{S'}}{L}{r}{M}{b} \to ^* \texttt{true}$. We look at the possible derivation steps that could have let to \texttt{true}. The only possible step is 
+    $$\ccwhile{\whi{S}}{L}{r}{M}{b} & \to \ccwhile{S}{(b)::L}{r}{M}{\texttt{true}}$$
+    This gives us our $r$ and obviously makes $ \ccwhile{S}{(b)::L}{r}{M}{\texttt{true}} \to \texttt{true}$. 
+    \item $\sosb{\whi{S'}}{L}{s}{M} \Rightarrow \sosb{\texttt{skip}}{L}{s}{M}$. This case is analogous.
+    \item The other cases are similar. \emph{Might add them later.}
+\end{itemize}
+This exhausts all possible cases and hence proves our theorem.
+\end{proof}
+
+
+\begin{theorem}
+\label{progresswhile}
+If $\ccwhile{S}{L}{r}{M}{b} ->^* \texttt{true}$, then $S = \texttt{skip}$ and $L = \texttt{Nil}$ or we have $\sosb{S}{L}{s}{M} \Rightarrow \sosb{S'}{L'}{s'}{M'}$ for some $S'$, $L'$, $s'$ and $M'$, and every $s$ equivalent to $r$, or $S = (b')$ and then either $L=\texttt{Nil}$ or $\sosb{S}{L}{s}{M} \Rightarrow \sosb{S'}{L'}{s'}{M'}$.
+\end{theorem}
+
+\begin{proof}
+We assume $\ccb{S}{L}{r}{M} ->^* \texttt{true}$. We look at the possible derivation steps that could have led to this form. 
+\begin{itemize}[noitemsep]
+    \item $\ccb{\texttt{skip}}{\texttt{Nil}}{r}{M} \to \texttt{true}$. This means $S = \texttt{skip}$ and $L = \texttt{Nil}$ and that means we are done.
+    \item $\ccb{\texttt{skip}}{P::L}{r}{M} \to \ccb{P}{L}{r}{M}$. This means we have $\sosb{\texttt{skip}}{P::L}{s}{M}$ with $s$ any state equivalent to $r$. We can then apply the rule [load$_{\textrm{os}}$], to get $\sosb{\texttt{skip}}{P::L}{s}{M} \Rightarrow \sosb{P}{L}{s}{M}$, which means we are done.
+    \item The other cases are similar. \emph{Might add them later.}
+\end{itemize}
+\end{proof}
+
+
+
+Now the only really interesting case in our progress and preservation proofs is the progress in case the only possible rule that could have been applied is 
+$$\ccwhile{(b')}{L}{r}{M}{b}  \to \ccwhile{\texttt{skip}}{L}{r}{M}{b'}$$
+
+We will need to change the theorem a bit to reflect that we have no $(b)$ statement in the semantics, only in the compile time checker. 
+
+We will quickly walk through the proof of that case and leave the rest to the reader as those are the same as in previous chapters. 
+
+Assume $\ccwhile{S}{L}{r}{M}{b} ->^* \texttt{true}$. Now we want to prove that either $S = \texttt{skip}$ and $L = \texttt{Nil}$ or we have $\sosb{S}{L}{s}{M} \Rightarrow \sosb{S'}{L'}{s'}{M'}$ for some $S'$, $L'$, $s'$ and $M'$, and every $s$ equivalent to $r$.
+
+If we see $\ccwhile{(b')}{L}{r}{M}{b} ->^* \texttt{true}$, the only possible rule that could have been applied is the one mentioned above. Then we have
+$$\ccwhile{\texttt{skip}}{L}{r}{M}{b'} ->^* \texttt{true}$$.
+Now, there are two possibilities; either our list $L$ is \texttt{Nil} or our list is of the form $I::L'$. If 

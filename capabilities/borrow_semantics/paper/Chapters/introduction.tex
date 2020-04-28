@@ -1,0 +1,69 @@
+As computers are found almost everywhere nowadays, we would hope these computers would always do as we expect them to do. However, so far very few programs and programming languages have actually been proven correct. Intensive testing is the best software developers can do. Luckily, much work is being done on the more rigorous \emph{proving} that a computer program does what it is designed to do. This thesis aims to join in those efforts. 
+
+The thesis is about the Rust programming language \citep{matsakis2014rust}. The makers of this programming language have made several claims about the safety, and specifically memory safety, of their language. Among other things, it should be impossible to get data races or dangling pointers in your programs. All safety aspects are guaranteed at compile time; if your Rust program contains hazards, the compiler will reject the program. Besides that, all checks should finish, even if the actual program contains an infinite loop or does not finish for some other reason. Due to executing these checks compile time, no run time penalty should exist. This makes the language different from, for example, C or Java. In C, no memory safety is guaranteed because arbitrary pointer arithmetic is allowed\footnote{However, there have been proposals to make extensions or versions of C that are memory safe, even some that rely on compile time/static checks. See for example \cite{dhurjati2003memory}}. In Java, memory safety is guaranteed by run time checks instead of compile time checks. 
+
+The combination of memory safety and guaranteeing it compile time is the reason it has been argued that Rust is a good language to use for making a kernel \citep{levy2017kernel} or to use in combination with other security measures such as Software Guard Extensions \citep{ding2017sgx}. Other benefits beyond memory safety have also been attributed to Rust and its features \citep{balasubramanian2017system}.
+
+\section{Previous work}
+However, little has been done to actually verify all the claims made by the developers of Rust. Much of the previous work concerning Rust has been done on improving the language itself and making it more versatile. See for example \cite{jespersen2015session}. Little has been done to actually confirm that it all works. 
+
+The most notable project that does look into the actual memory safety of Rust, is the Rustbelt project \citep{jung2017rustbelt}. In this project, researchers have formalized a subset of Rust and proved some libraries to be safe in Coq. They use separation logic in order to model the memory of the computer during computation. 
+
+\cite{benitez2016rusty} has also made a formalization of a very small subset of Rust. He modeled references and ownership as capabilities on different value locations. For example, a variable \verb|x| could have the capabilities \texttt{read} or \texttt{write} on a location to indicate that it could be read or modified respectively. He separated memory locations from computation. In \cite{reed2015patina} something similar is done, and some memory safety claims are proven. 
+
+\section{The current work}
+The current work aims to differentiate from the above work by showing how we can model the memory safety aspects of Rust, whilst using simple semantic rules, instead of more advanced mechanisms such as separation logic. The proofs here should be readable for anyone with only basic background in semantics theory, and gives the reader insight into what is happening in Rust both in practice and on a formal level. 
+
+The research question that is central in this thesis is \emph{How does one formally describe ownership in Rust in a simple way?}
+
+In order to answer this question, we looked at several sub-questions:
+
+\begin{itemize}[noitemsep]
+    \item What is ownership in Rust?
+    \begin{itemize}[noitemsep]
+        \item What is it used for?
+        \item What syntax is relevant to denote ownership?
+        \item What is borrowing?
+        \item What are lifetimes?
+    \end{itemize}
+    \item What subset of Rust is necessary to describe ownership?
+    \item What type of semantics is the most useful to describe ownership?
+    \item How can we model the compile time checker best?
+    \item Can we prove safety from a set of semantic rules and a compile time checker?
+\end{itemize}
+
+
+%In a world where almost everything around us uses computers it seems more than logical that we know that these computers behave like we expect them to. We don't want the bank to transfer a thousand dollars out of our account by accident or our computer with valuable documents to crash. However, most of the programs that you will use are not as verified as you would like. This thesis aims to help build the theory surrounding verification of programs from a semantics and type systems point of view. I focus on the programming language Rust, and then specifically its claims to be memory safe. I will show a way to formalize the language and will prove several stuff about it.  
+
+%Is this thesis useful for practical things
+%Hoe verhoudt deze scriptie zich tot RustBelt
+
+%This question is then divided in several subquestions, such as one for the syntax, one for the semantics, one for the type system.
+
+
+
+\section{Scope of this thesis}
+As for Rust, we will only be focusing on two major aspects of the language; the concepts of \emph{ownership} and \emph{borrowing}. All you need to know and a little bit more is explained in Chapter \ref{Rust}. The version of Rust compiler used for this thesis was 1.22.1. 
+
+We will mainly leave the types for what they are and focus on the memory safety aspect. The specific types are not particularly interesting. First of all, the focus of this thesis is on memory safety. Types are not particularly relevant for that. Also, the type system is not very different from other programming languages, which makes that adding them would also not be interesting from a research point of view. Therefore, types are ignored to keep the scope of this thesis limited. We will only look at whether an item is mutable or not, a concept explained in Chapter \ref{Rust}. 
+
+Rust also offers the possibility to surpass some of its memory safety guards by giving the user the option to write \texttt{unsafe} code. Many of Rust's standard libraries depend on \texttt{unsafe} code. However, the developers of Rust claim that if users just make use of the interfaces and do not write unsafe code themselves, their code should be safe. In this thesis, we will not look at unsafe code. \cite{jung2017rustbelt} have developed a set of semantic rules to incorporate both safe and unsafe code. 
+
+The compiler finishes almost always, even if the program contains an infinite loop. The actual Rust compiler is Turing Complete \citep{compiler}, but there are no known `normal' cases where it does not finish. When checking a program compile time, we cannot simply run the program in the check if the program loops infinitely, because the checker should not loop. The compiler needs to have a level of abstraction from the program. We will show how we did that in a later chapter. On the other hand, we will not follow the Rust compiler completely. The compiler often gives warnings if there is something of which it suspects that you did not mean to write it down that way. We will ignore these warnings. Our goal here is to accept the same programs as the Rust compiler accepts, so we only take actual errors into account. 
+
+\subsection{On safety and memory safety}
+Before moving on, we will quickly walk through our definitions of safety and memory safety. In this thesis, memory safety of a program will be used to indicate that a program is protected from either bugs or vulnerabilities that have to do with memory access, such as buffer overflows or dangling pointers. 
+
+When talking about semantics, this translates to having no problems in our model of the memory. For example, that we cannot have an uninitialized variable in an expression or that we cannot assign a variable a value twice, unless it is mutable (see Chapter \ref{Rust} for an explanation of the term). 
+
+Safety means that a program cannot get in trouble in general. For example, we do not want any errors. When talking about semantics, an unsafe program can either have explicit crashes, or can get stuck in the semantics and there is no `step' to take in a semantic derivation system. Neither should happen in a safe program. 
+
+\section[Why formal semantics]{Why make a formal semantics?}
+Before looking at the rest of the thesis, we will first briefly discuss why it is important to formalize programming languages and why we want to make formal semantics. Besides giving insight in what is happening in the programming language, there are multiple goals.
+
+First of all, a set of formal rules can help prove specific Rust programs to be correct. In order to prove that a program does what it is supposed to do, we first need to know what the program does exactly. Then we can prove that this is indeed what was intended. A formal description of the language is therefore necessary. 
+
+The second goal is to say something about programs that process Rust, such as compilers. Once we know how syntax relates to the meaning of a program, we can prove that the compilers behave correctly. Besides compilers, this could also apply to static analyzers, optimization programs, etc.
+
+\section{The next chapters}
+The following chapter is concerned with Rust. We will give a brief introduction to Rust and explain the relevant features. After that, in Chapter \ref{Moving} \emph{Moving}, we will formalize the most basic form of the ownership concept. All (mathematical) details will be explained rather thoroughly. In the chapter after that, Chapter \ref{Borrowing} \emph{Borrowing}, we will add two new features: mutability and borrowing. By then, we have a pretty rigorous basis from Chapter \ref{Moving}, so we will not provide as many details anymore. This gives us the space to actually focus on what is happening there, instead of getting lost in the mathematics. In the final chapter, Chapter \ref{Conclusion} \emph{Conclusion \& Discussion}, we briefly discuss what we have done and the implications for future work. 

@@ -194,6 +194,8 @@ Proof.
     match goal with
     | [ |- context[update _ ?x _ ?y] ] =>
       destruct (String.eqb x y) eqn: eq
+    | [ H: context[update _ ?x _ ?y] |- _ ] =>
+      destruct (String.eqb x y) eqn: eq
     | [ |- context[update_list _ ?l _ ?y] ] =>
       destruct (in_dec string_dec y l)
     end.

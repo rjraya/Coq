@@ -1,0 +1,233 @@
+In order to say something meaningful about ownership and related concepts in Rust, we need to define semantics. This chapter starts doing so by giving the semantics and explaining them, so that they become plausible in a intuitive sense. The goal is not to prove they are correct, however.
+
+It starts out very simple and from there new features will be added to the semantics rules as we proceed. In this chapter, natural semantics are used. This is a form of big steps semantics. In general, a rule has the following form:
+
+$$\langle S, s \rangle \to s'$$
+
+Where $S$ is a statement as defined in the previous chapter in the syntax. $s$ and $s'$ are states, which will be explained later on. 
+
+\section{Framework}
+In this section, the framework and most of the functions that are needed for the semantics are explained. Some functions are only relevant later on, so it makes little sense to dicuss them here already. 
+
+\subsection{Symbols}
+The first newly defined symbol is $-$, which will be used to indicate that a variable has not been declared at all. Intuitively, it therefore is some special kind of value a variable can have. Also, $\perp$ will be used to indicate that a variable has been declared using \verb|let|, but has not been assigned a value.
+
+\subsection{Sets}
+As is conventional, the set $\mathbb{Z}$ will be used to denote the set of integers. We extent $\mathbb{Z}$ with two new symbols mentioned in the previous section, to get $\mathbb{Z}_{ext}$, so $\mathbb{Z}_{ext} = \mathbb{Z} ~\cup ~ \{\perp, -\}$. 
+
+\subsubsection{Expressions}
+We also have \textbf{Var} to denote the set of all variables and \textbf{Num} to denote the set of all numbers in the form they are represented in in Rust. Next, we combine several sets to form other sets. The set \textbf{Point} is recursively defined as follows:
+
+\begin{itemize}[noitemsep]
+    \item If $x \in \textbf{Var}$, then $x \in \textbf{Point}$
+    \item If $x \in \textbf{Point}$, then $\&a~x \in \textbf{Point}$
+\end{itemize}
+
+We also define a set \textbf{Add}, which consists of tuples. Now we combine several sets to form $\textbf{Exp} = \textbf{Num} \cup \textbf{Point} \cup \textbf{Add}$. We said \textbf{Add} consisted of tuples, but we did not say what was in these tuples. We are now able to state that each element of the tuple should be an element of the set \textbf{Exp}. Now we have recursively defined a set that contains representations for all possible syntactic structures. Note that elements from \textbf{Add} will usually be denoted as ``$e_1 + e_2$'' instead of ``$(e_1, e_2)$''.
+
+\subsection{Functions}
+The function $
+\mathcal{N}$ is a function from $\textbf{Num}$ to $\mathbb{Z}$ which translates a Rust representation for a number to the actual number. We also have a function $\mathcal{B}: \textbf{Var} \to \mathcal{P}(\textbf{Var})$ (where $\mathcal{P}(X)$ denotes the power set of $X$). This functions gives for a variable all variables it is currently borrowing from. We also have an evaluation functions $\mathcal{A}$, which gives for an element from \textbf{Exp} and a `state' the `value'. Here, `state' and `value' are between `', since these are not exact definitions. Instead, the exact definitions of these and thus of $\mathcal{A}$ will differ from section to section and adjust as we make our semantics more complicated. 
+
+\subsubsection{Expression variables}
+It will prove convenient to have functions that give us all variables in an expression that adhere to certain conditions. Therefore, we will define a few of those that will prove to be useful. They all have the signature $\textbf{Exp} \to \mathcal{P}(\textbf{Var})$.
+
+The first of these is $ev$, with definition:
+
+\begin{align*}
+    ev(i)          &= \{\}
+\\  ev(x)          &= \{x\}
+\\  ev(\&a~e)          &= ev(e)
+\\  ev(\&a~\textrm{mut}~e)          &= ??????
+\\  ev(e_1 + e_2)          &= ev(e_1) \cup ev(e_2)
+\end{align*}
+
+This function returns all variables in an expression as a set.
+
+Next, we have $ev_b$, with definition:
+\begin{align*}
+    ev_b(i)          &= \{\}
+\\  ev_b(x)          &= \{\}
+\\  ev_b(\&a~x)          &= \{x\}
+\\  ev_b(\&a~e)          &= ev_b(e) ~~~\textrm{(if $e$ is not a variable)}
+\\  ev_b(\&a~\textrm{mut}~e)          &= ??????
+\\  ev_b(e_1 + e_2)          &= ev_b(e_1) \cup ev_b(e_2)
+\end{align*}
+
+This function only adds a value to the set to be returned if this variable is being borrowed in the expression. 
+
+\section{Move only}
+We start with a very simple, perhaps a bit boring model where you can only move variables. You cannot borrow and nothing is mutable. That means everything is constant. While this does not seem like a very useful language, it will provide a good base to work from when adding new features. This language has the following definition for expressions:
+$$e ::= x \mid i \mid e_1 + e_2$$
+We can change the possible types accordingly, but we really do not need them now as the semantics do not use the types. The types come into play in a following chapter. 
+
+Here, we define the state as a function $s: \textbf{Var} \to \mathbb{Z}_{ext}$. Then we define our evaluation function $\mathcal{A}$ as:
+
+\begin{align*}
+    \letterfunc{A}{i}s          &= \letterfunc{N}{i}
+\\  \letterfunc{A}{x}s          &= s(x)
+\\  \letterfunc{A}{e_1 + e_2}s  &= \letterfunc{A}{e_1}s + \letterfunc{A}{e_2}s \textrm{ if } \letterfunc{A}{e_1}s \in \mathbb{Z} \textrm{ and } \letterfunc{A}{e_2}s \in \mathbb{Z}
+\\  \letterfunc{A}{e_1 + e_2}s  &= - \textrm{ otherwise}
+\end{align*}
+
+Now we get the following semantic rules for each of the different statements. 
+
+\medskip
+\begin{tabular}{p{5em}p{18em}p{13em}}
+[skip$_{\textrm{ns}}$] &
+\centering$\langle$ \texttt{skip} $, s \rangle \to s$ & \medskip\\
+
+[comp$_{\textrm{ns}}$] &
+\centering \AxiomC{$\langle S_1, s \rangle \to s' $}
+\AxiomC{$\langle S_2, s' \rangle \to s''$}
+\BinaryInfC{$\langle S_1$; $S_2, s \rangle \to s''$}
+\DisplayProof \medskip& \\
+
+[let$_{\textrm{ns}}$] &
+\centering
+\AxiomC{$\langle S, s[x\mapsto \perp] \rangle \to s'$}
+\UnaryInfC{$\langle a : \texttt{let x } : \tau \texttt{ in } S, s \rangle \to s'[x \mapsto s(x)]$}
+\DisplayProof \medskip& \\
+
+[ass$_{\textrm{ns}}$] &
+\centering$\langle$ \texttt{x := } e$, s \rangle \to s[x \mapsto \letterfunc{A}{e}s][ev(e)\mapsto-]$ & if $\letterfunc{A}{x}s = \perp$, $\letterfunc{A}{e} \neq \perp$ and $\letterfunc{A}{e} \neq -$\medskip\\
+
+\end{tabular} 
+
+
+
+\section{Borrowing}
+We will now add an extra feature to our language, namely borrowing. Borrowing presents us with new challenges, as we need to make sure that the variable which is borrowed from in accessible during the borrow, but becomes accessible again after the borrow. That is why we need to keep track of what variables were borrowed from when they go out of scope. 
+
+For borrowing, the language we have the following expressions: 
+$$e ::= x \mid i \mid e_1 + e_2 \mid \&a~e$$
+
+We will first start with defining the evaluation function $\mathcal{A}$. In order to do that, we also need to know the type of the state $s$. We can leave the evaluation function for the first three types of expressions the same as in the previous section. However, we need to think of what we want $\&a~e$ to evaluate to. There are two possible logical answers. We can let it evaluate to e itself, and thus let the result of the evaluation be a pointer of some sort in the model as well. We can also recursively calculate the evaluation of $e$ and set that as the evaluation of $\&a~e$ as well. This latter model thus does not model pointers as such. In the two sections below, both models are worked out and described. We will start with the latter model, which we will call the ``non-pointer'' model. After that, the ``pointer'' model will be described. 
+
+\subsection{Non-pointer model}
+In this model, a state $s$ is a function with signature $\textbf{Var} \to \mathbb{Z}_{ext}$, just as before. The evaluation function is defined as:
+\begin{align*}
+    \letterfunc{A}{i}s          &= \letterfunc{N}{i}
+\\  \letterfunc{A}{x}s          &= s(x)
+\\  \letterfunc{A}{e_1 + e_2}s  &= \letterfunc{A}{e_1}s + \letterfunc{A}{e_2}s
+\\ \letterfunc{A}{\&a~x}s       &= \letterfunc{A}{x}s
+\end{align*}
+Notice it is the same as above, except for the added last line. 
+
+However, besides the state that assigns a value to a variable, we also need a way to keep track of what variables \verb|x| borrows from. In a program such as 
+\begin{minted}[linenos, frame=lines]{rust}
+let y;
+{
+    let x;
+    {
+        y = 5;
+        x = &y
+        //do other stuff?
+    }
+}
+\end{minted}
+we need to return ownership to \verb|y| at the end of the inner brackets. However, at the end of the brackets, we have no easy way in natural semantics to see that when \verb|x| goes out of scope, it has borrowed from \verb|y|. Natural semantics does not know what happens in the brackets. Therefore we define a second function, $\mathcal{B}$, that when passed a variable \verb|x|, returns all the variables \verb|x| borrowed from. The signature of $\mathcal{B}$ is \textbf{Var} $\to \mathcal{P}(\textbf{Var})$. That means the signature of a rule becomes 
+
+$$\langle S, s, \mathcal{B} \rangle \to s, \mathcal{B}$$
+
+The semantics for this model now become:
+
+\medskip
+\begin{tabular}{p{5em}p{18em}p{13em}}
+[skip$_{\textrm{ns}}$] &
+\centering$\langle$ \texttt{skip} $, s, \mathcal{B} \rangle \to s, \mathcal{B}$ & \medskip\\
+
+[comp$_{\textrm{ns}}$] &
+\centering \AxiomC{$\langle S_1, s, \mathcal{B} \rangle \to s', \mathcal{B}' $}
+\AxiomC{$\langle S_2, s', \mathcal{B}' \rangle \to s'', \mathcal{B}''$}
+\BinaryInfC{$\langle S_1$; $S_2, s, \mathcal{B} \rangle \to s'', \mathcal{B}''$}
+\DisplayProof \medskip& \\
+
+[let$_{\textrm{ns}}$] &
+\centering
+\AxiomC{$\langle S, s[x\mapsto \perp], \mathcal{B} \rangle \to s', \mathcal{B}'$}
+\UnaryInfC{$\langle a : \texttt{let x } : \tau \texttt{ in } S, s, \mathcal{B} \rangle \to s'[\mathcal{B}'(x) \mapsto s\mathcal{B}'(x)][x \mapsto s(x)], \mathcal{B}'[x \mapsto *]$}
+\DisplayProof \medskip& \\
+
+[ass$_{\textrm{ns}}$] &
+\centering$\langle$ \texttt{x := } e$, s \rangle \to s[x \mapsto \letterfunc{A}{e}s][ev(e)\mapsto-]$ & if $\letterfunc{A}{x}s = \perp$, $\letterfunc{A}{e} \neq \perp$ and $\letterfunc{A}{e} \neq -$\medskip\\
+\end{tabular} 
+
+
+\subsection{Pointer model}
+
+
+
+
+
+
+\iffalse
+First, we define a set $\mathbb{Z}_{ext} = \mathbb{Z} ~\cup ~ \{\perp, -\}$. We will use $-$ to denote a variable has not been defined at all. We will use $\perp$ to denote a variable has been declared by using \verb|let|, but has not been assigned a value. Next, we need to define a function to evaluate expressions, $\mathcal{A}$. We try two different definitions and work out what kind of semantics go with them. In both cases, $\mathcal{N}$ is a function with type \textbf{Num} $\to \mathbb{Z}$, where \textbf{Num} is the representation of a number in Rust. The first model does not model pointers as such, but instead does other bookkeeping to keep track of what was borrowed. The second model tries to model pointers in the best possible way. 
+
+\section{Non-pointer model}
+
+For the first definition, we say that the state $s$ is a function with type \textbf{Var} $\to \mathbb{Z}_{ext}$, where \textbf{Var} is the set of all variables. That means our definition of $\mathcal{A}$ becomes $\mathcal{A}: \textbf{Var} \to (\textbf{State} \to \mathbb{Z}_{ext})$, where \textbf{State} is the set of all states $s$. 
+
+\begin{align*}
+    \letterfunc{A}{i}s          &= \letterfunc{N}{i}
+\\  \letterfunc{A}{x}s          &= s x
+\\  \letterfunc{A}{\&a e}s          &= \letterfunc{A}{e}s
+%\\  \letterfunc{A}{\&a mut e}s          &= 
+\end{align*}
+Here, when we borrow a variable, we look at the value of what we are borrowing instead of the variable. In this case, we need to keep track in some other way where we borrowed from.
+
+\medskip
+\begin{tabular}{p{5em}p{17em}p{13em}}
+[skip$_{\textrm{ns}}$] &
+\centering$\langle$ \texttt{skip} $, s \rangle \to s$ & \medskip\\
+
+[comp$_{\textrm{ns}}$] &
+\centering \AxiomC{$\langle S_1, s \rangle \to s' $}
+\AxiomC{$\langle S_2, s' \rangle \to s''$}
+\BinaryInfC{$\langle S_1$; $S_2, s \rangle \to s''$}
+\DisplayProof \medskip& \\
+
+[let$_{\textrm{ns}}$] &
+\centering \AxiomC{$\langle S, s[x \mapsto \perp] \rangle \to s'$}
+\UnaryInfC{$\langle a: \textrm{let } x:\tau \textrm{ in } S, s \rangle \to s'[x \mapsto s~x]$}
+\DisplayProof \medskip& \\
+
+[ass$_{\textrm{ns}}$] &
+\centering $\langle x := e, s \rangle \to s [x \mapsto \letterfunc{A}{e}s]$ \medskip & if $\letterfunc{A}{x}s = \perp$\\
+\end{tabular}
+
+Note that there is no assignment rule for when a variable has not been defined first with \verb|let| yet. In natural semantics, if there is no rule, this means a statement is not correct in the language. 
+
+\section{Pointer model}
+\emph{Hier ben ik nog niet echt aan toegekomen}
+In the second definition, the state $s$ is a function with type \textbf{Var} $\to \textbf{Val}$, where $\textbf{Val} = e ~\cup ~\mathbb{Z}_{ext}$. Then we get the following definition:
+
+\begin{align*}
+    \letterfunc{A}{i}s          &= \letterfunc{N}{i}
+\\  \letterfunc{A}{x}s          &= s(x)
+\\  \letterfunc{A}{\&a~ e}s          &= e
+%\\  \letterfunc{A}{\&a mut e}s          &= 
+\end{align*}
+
+
+\medskip
+\begin{tabular}{p{5em}p{15em}p{13em}}
+[skip$_{\textrm{ns}}$] &
+\centering$\langle$ \texttt{skip} $, s \rangle \to s$ & \medskip\\
+
+[comp$_{\textrm{ns}}$] &
+\centering \AxiomC{$\langle S_1, s \rangle \to s' $}
+\AxiomC{$\langle S_2, s' \rangle \to s''$}
+\BinaryInfC{$\langle S_1$; $S_2, s \rangle \to s''$}
+\DisplayProof \medskip& \\
+
+[let$_{\textrm{ns}}$] &
+\centering \AxiomC{$\langle S, s[] \rangle \to s'$}
+\UnaryInfC{$\langle a: \textrm{let } x:\tau \textrm{ in } S, s \rangle \to s'$}
+\DisplayProof \medskip& \\
+
+[ass$_{\textrm{ns}}$] &
+\centering $\langle x := e, s \rangle \to s [x \mapsto Ev(e, s)]$ \medskip & \\
+\end{tabular}
+\fi
+

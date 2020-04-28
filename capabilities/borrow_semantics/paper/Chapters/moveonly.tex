@@ -1,0 +1,808 @@
+\section{Introduction}
+In the following two chapters, we will look into two different subsets of Rust. This first chapter is concerned with a very simple language where we will just focus on \emph{ownership} and \emph{moving}. We will first look into the syntax of this small language and then move on to the semantics. 
+
+In the next chapter, we will add some interesting features, and again look at both the syntax and semantics of those features. This first chapter will go into detail at every step, while the following chapter will not do so anymore and assume that what was mentioned here is known to the reader.
+
+The subset of Rust that interests us in this chapter will be dubbed as `move only'. In this subset of Rust, you can only assign variables. If you do so, the ownership of the resource will be moved to that variable. You cannot borrow and nothing is mutable. That means everything is constant. While this does not seem like a very useful language, it will provide a good basis to work from when adding new features.
+
+\subsection{A note on types}
+In this chapter and the following chapter, we will assume that all programs are typed correctly. We will not develop a type system here, as that is not particularly interesting for what we are investigating now: the compile timed check of moving, borrowing and mutability. Therefore, the assumption is that we are only dealing with well-typed programs. 
+
+\section{Syntax}
+We will first look at the syntax of our `move only' language. We have the following defintions.
+
+\begin{definition}
+\label{statementsmove}
+A statement $S$ is defined recursively by:
+$$S ::= \sk \mid S_1; S_2 \mid \letm{x}{S'} \mid x = e$$
+where $e$ is an expression as defined below, $\tau$ is a type as defined below and $S_1$, $S_2$ and $S'$ are statements themselves.
+\end{definition}
+
+\begin{definition}
+\label{expressionsmove}
+An expression $e$ is defined recursively by:
+$$e ::= x \mid i \mid e_1 + e_2$$
+\end{definition}
+
+\begin{definition}
+\label{typesmove}
+A type $\tau$ is
+$$\tau ::= \texttt{Int}$$
+\end{definition}
+
+This syntax is very simple, but enough for us to say something useful about ownership. We use only one data type, as more data types will add no additional interesting facts for ownership. However, this syntax can be expanded to include more types. The data type we use is Int to denote all integers.
+
+Our syntax for \texttt{let}-statements is different from the usual Rust syntax. We split up a statement such as \verb|let x = 5| in \texttt{let x in (x = 5)} (brackets added for clarity). This can be done for every type of let-statement. It is done to show that there are actually two steps in a statement such as \texttt{let x = 5}. First of all, the variable \verb|x| is declared. Then, a value is assigned to the resource \verb|x| owns. 
+
+Besides splitting up a \texttt{let}-statement if necessary, we include a type in our \texttt{let}-statements. While this is not done in Rust, it makes things more clear for the reader, especially in the following chapter where we will include borrows. 
+%After the splitting (when necessary), we've 'desugared' the statement in a similar way as was done in \ref{desugar}. This is done to make lifetimes explicit\footnote{We do not use the lifetimes explicitly in this thesis due to time constraints. However, including them . That means we change \verb|let x in (x = 5)| to \verb|a: {let x in (x = 5)}|. We do not add the \verb|'| for the \verb|a|, as we will not be talking about generics and this only complicates the syntax. Lastly, we desugar more, to also include the type $\tau$, so that the previous statement becomes \verb|a: {let x:i32 in (x = 5)}|. 
+
+In order to illustrate this, the following program (taken from \ref{desugar}) is written in our syntax. 
+
+\begin{minted}[linenos, frame=lines]{rust}
+let x = 0;
+let y = x;
+let z = y;
+\end{minted}
+
+\begin{minted}[linenos, frame=lines]{rust}
+let x: Int in (x = 0;
+    let y: Int in (y = x;
+        let z: Int in (z = y;
+        }
+    )
+)
+\end{minted}
+
+We will often put the closing bracket at the same indenting height as the opening brackets, contrary to normal programming standards. This is done to clearly show the scopes. 
+
+Our syntax looks like the desugaring in \ref{desugar}, but we removed the lifetimes in order to simplify the syntax. We do not need the lifetimes for the very simple features of Rust we will be looking at. 
+
+
+\section{Semantics: Framework}
+In this chapter, we will look at two types of semantics. The first is a big step semantics and the second a small steps semantics. Both are based on the exposition in \cite{nielson1992semantics}. We will try to use as much of the same notation as used in \cite{nielson1992semantics} as possible. 
+
+Our big step semantics is called `natural semantics'. Its rules are of the form: 
+
+$$\ns{S}{s}{s'}$$
+
+$S$ is a statement as defined in the previous section. $s$ and $s'$ are states, for which an exact definition will be given shortly. 
+
+Our small step semantics is called `structural operational semantics'. Its rules are of the form:
+
+$$\sos{S}{L}{s} \Rightarrow \sos{S'}{L'}{s'}$$
+
+Where $S$, $S'$ and $s$, $s'$ are again statements and states respectively. $L$ and $L'$ are lists of program parts, which will also be defined later on. 
+
+In order to work with these rules, we need some more mathematical definitions for the different kinds of sets and functions we are interested in. Therefore, we will first set up a mathematical framework in this section, and then move on to the actual rules in the following two sections. 
+
+In this section we will need to distinguish actual definitions from pseudo-definitions. The latter means we give an intended interpretation for a symbol or a set in natural language. This is done to show what the symbol or set is supposed to represent in the real world. However, the actual meaning of the symbol or set will depend on how we will use it in other definitions later on. The pseudo-definitions are added to help the reader navigate through the many difficult notations introduced in the chapter and to give them some intuition to what is happening. To distinguish between actual definitions and these pseudo-definitions, the latter is preceded by `Informal', as below. 
+
+\subsection*{Variable values}
+The symbols in this subsection will be defined informally.  
+
+\begin{infdefinition}
+We will need the following symbols 
+\begin{enumerate}[noitemsep, label={\roman*)}]
+    \item $-$ will be used to indicate that a variable has not been declared at all.
+    \item $\perp$ will be used to indicate that a variable has been declared using \verb|let|, but has not been assigned a value.
+\end{enumerate}
+\end{infdefinition}
+
+Intuitively, these are some special kind of values a variable can have. 
+
+As is conventional, the set $\mathbb{Z}$ will be used to denote the set of integers. We extend $\mathbb{Z}$ with two new symbols mentioned in the previous section, to get $\mathbb{Z}_{ext}$. Therefore: 
+
+\begin{definition}
+$\mathbb{Z}_{ext} := \mathbb{Z} ~\cup ~ \{\perp, -\}$.
+\end{definition}
+
+\subsection*{Expressions}
+\begin{definition}
+We have the following sets:
+\begin{enumerate}[noitemsep, label={\roman*)}]
+    \item \textbf{Var} denotes the set of all variables in Rust.
+    \item \textbf{Num} denotes the set of all numbers in the form of how they are represented in Rust.
+    \item \textbf{Add} denotes the set of all tuples from \textbf{Exp}, i.e. $\textbf{Add} = \textbf{Exp} \times \textbf{Exp}$ . 
+    \item $\textbf{Exp} = \textbf{Num} \cup \textbf{Var} \cup \textbf{Add}$
+\end{enumerate}
+\end{definition}
+
+Notice that we have a recursive definition of \textbf{Exp}. \textbf{Exp} should be interpreted as a representation for all possible syntactic expressions. Note that elements from \textbf{Add} will usually be denoted as ``$e_1 + e_2$'' instead of ``$(e_1, e_2)$''.
+
+As \textbf{Exp} is a inductive set, it will turn out to be useful to also be able to gather all the variables that are in an expression $e$. We do this by defining a new function $\mathcal{V}$.
+
+\begin{definition}
+We define the function $\mathcal{V}: \textbf{Exp} \to \mathcal{P}(\textbf{Var})$ recursively by:
+\begin{align*}
+    \mathcal{V}(i)          &= \emptyset
+\\  \mathcal{V}(x)          &= \{ x \}
+\\  \mathcal{V}(e_1 + e_2)  &= \mathcal{V}(e_1) \cup \mathcal{V}(e_2)
+\end{align*}
+\end{definition}
+
+We see that this definition recursively walks through the expression to gather all variables mentioned and join them together into a single set. 
+
+We also need a way to transform a Rust representation of a number into an actual number. 
+
+\begin{infdefinition}
+$\mathcal{N}$: $\textbf{Num} \to \mathbb{Z}$ translates a Rust representation for a number to the actual number
+\end{infdefinition}
+
+We leave the details of this function out, as it is cumbersome and not relevant for the remainder of this thesis. We will simply assume that we have such a function and that it behaves as we would expect. For a detailed exposition on how one could make such a function, we refer the reader to  \cite{nielson1992semantics}. 
+
+\subsection*{State and evaluation}
+The state is a function that maps a variable to a value. Therefore, we can define the set \textbf{State} which contains all possible states. 
+
+\begin{definition}
+\textbf{State} is the set of all functions $s: \textbf{Var} \to \mathbb{Z}_{ext}$
+\end{definition}
+
+We also have an evaluation function $\mathcal{A}$, which takes an element from \textbf{Exp} and a state $s$ and returns the corresponding value. The value is an element of $\mathbb{Z}_{ext}$.
+
+\begin{definition}
+The evaluation function $\mathcal{A}: \textbf{Exp} \times \textbf{State} \to \mathbb{Z}_{ext}$ is defined by:
+\begin{align*}
+    \letterfunc{A}{i}s          &= \letterfunc{N}{i} & i \in \mathbb{Z}
+\\  \letterfunc{A}{x}s          &= s(x) & x \textrm{ a variable}
+\\  \letterfunc{A}{e_1 + e_2}s  &= \letterfunc{A}{e_1}s + \letterfunc{A}{e_2}s & \textrm{ if } \letterfunc{A}{e_1}s \in \mathbb{Z} \textrm{ and } \letterfunc{A}{e_2}s \in \mathbb{Z}
+\\  \letterfunc{A}{e_1 + e_2}s  &= - & \textrm{ otherwise}
+\end{align*}
+\end{definition}
+
+We now have sufficient apparatus to continue with the actual semantic rules. 
+
+\section{Semantics: Big step}
+As mentioned earlier on, our big step semantics are called natural semantics with rules of the form 
+$$\ns{S}{s}{s'}$$
+
+Where $S$ is a statement and $s$, $s'$ are states. As we have defined both statements and states in the previous section, we can now start defining the actual rules. 
+
+\subsection{Natural semantics rules}
+
+\begin{definition} 
+We define the following natural semantics rules. The names on the left are used to later refer to the specific rules.
+
+\begin{tabular}{p{2em}p{18em}p{13em}}
+\skipns &
+\centering$\ns{\texttt{skip}}{s}{s}$ & \medskip\\
+
+\compns &
+\centering \AxiomC{$\ns{S_1}{s}{s'}$}
+\AxiomC{$\ns{S_2}{s'}{s''}$}
+\BinaryInfC{$\ns{S_1; S_2}{s}{s''}$}
+\DisplayProof \medskip& \\
+
+\letns &
+\centering
+\AxiomC{$\ns{S}{s[x\mapsto \perp]}{s'}$}
+\UnaryInfC{$\ns{\letm{x}{S}}{s}{s'[x \mapsto s(x)]}$}
+\DisplayProof \medskip& \\
+
+\assns &
+\centering $\ns{x = e}{s}{s[x \mapsto \letterfunc{A}{e}s][\mathcal{V}(e)\mapsto-]}$ & if $\letterfunc{A}{x}s = \perp$, $\letterfunc{A}{e}s$ 
+\\
+& & $\neq \perp$ and $\letterfunc{A}{e}s \neq -$\medskip\\
+\end{tabular} 
+$\mathcal{V}(e)\mapsto-$ is an abbreviation for `for all $x \in \mathcal{V}(e)$, $x \mapsto -$'.
+\end{definition} 
+
+The rules for skip and composition are assumed to be self-explanatory (see also \cite{nielson1992semantics}). The rule for \texttt{let} is derived from the idea that a \texttt{let}-statement should put the variable $x$ at $\perp$ (declared but not assigned). When the body of a let-statement is finished, $x$ should be put at whatever it was before it encountered the \texttt{let}-statement. 
+
+As for the assignment rule, there are several conditions that need to apply before we can consider the rule. If one of these conditions does not apply, we cannot apply this rule and that means we cannot make a derivation of the program. The program is incorrect, then. The first rule states that \verb|x| must have been declared, but not assigned. The second and third rules state that the expression must result in a value. In practice that means that every variable in the expression must be assigned some value. 
+For example, take a look at the following program:
+$$\letm{x}{x=y}$$ 
+$y$ has not been given a value (it has not even been declared), so we cannot rightly assign $y$'s value to $x$. 
+
+Note that these rules are important to model Rust in the best possible way. It is not possible to assign to a value that has not been declared and it is also not possible to assign a value to a non-mutable variable that already has a value. 
+
+\subsection{Properties of our natural semantics rules}
+In this subsection, we will look at, and prove some interesting properties of our natural semantics. 
+
+\subsubsection*{Determinism}
+
+The first property that interests us is determinism. This means that if we run a program multiple times (even infinitely many times) with the same starting state, the end state will always be the same. This is, of course, a desirable property in most programming languages.
+
+\begin{theorem}
+For every statement $S$, every state $s, s', s''$, if $\ns{S}{s}{s'}$ and $\ns{S}{s}{s''}$, then $s' = s''$.
+\end{theorem}
+
+\begin{proof}
+The proof proceeds by induction on the structure of $S$. We distinguish the following cases:
+\begin{itemize}[noitemsep]
+    \item $S$ = \sk : if $\ns{\sk}{s}{s'}$ and $\ns{\texttt{skip}}{s}{s''}$, then this can only be achieved by \skipns, which means $s=s'$ and $s=s''$, so $s' = s''$. 
+    \item $S = x = e$ : if $\ns{x = e}{s}{s'}$ and $\ns{x = e}{s}{s''}$, then the rule that must have been applied is \assns. This means $s'= s[x \mapsto \letterfunc{A}{e}s][\mathcal{V}(e)\mapsto-]$ and $s''=s[x \mapsto \letterfunc{A}{e}s][\mathcal{V}(e)\mapsto-]$, so $s'=s''$.
+    \item $S = S_1; S_2$ : if $\ns{S_1;S_2}{s}{s'}$ and $\ns{S_1;S_2}{s}{s''}$, the rule that must have been applied is \compns. This gives us
+    $$ \AxiomC{$\ns{S_1}{s}{s'''}$}
+\AxiomC{$\ns{S_2}{s'''}{s'}$}
+\BinaryInfC{$\ns{S_1; S_2}{s}{s'}$}
+\DisplayProof
+ \textrm{ and }
+ \AxiomC{$\ns{S_1}{s}{s''''}$}
+\AxiomC{$\ns{S_2}{s''''}{s''}$}
+\BinaryInfC{$\ns{S_1; S_2}{s}{s''}$}
+\DisplayProof$$
+    We can now apply the induction hypothesis to $\ns{S_1}{s}{s'''}$ and $\ns{S_1}{s}{s''''}$, so we have $s''' = s''''$. We can also apply the induction hypothesis to $\ns{S_2}{s'''}{s'}$ and $\ns{S_2}{s''''}{s''}$, so we have $s' = s''$.
+    \item $S = \letm{x}{S'}$ : if $\ns{\letm{x}{S'}}{s}{s'}$ and $\ns{\letm{x}{S'}}{s}{s''}$, then it must be the case that the rule [let$_{\textrm{ns}}$] has been applied. That gives us
+    $$
+    \AxiomC{$\ns{S'}{s[x\mapsto \perp]}{s'''}$}
+\UnaryInfC{$\ns{\letm{x}{S'}}{s}{s'''[x \mapsto s(x)]}$}
+\DisplayProof
+    $$
+    where $s'''[x \mapsto s(x)] = s'$ and
+    $$\AxiomC{$\ns{S'}{s[x\mapsto \perp]}{s''''}$}
+\UnaryInfC{$\ns{\letm{x}{S'}}{s}{s''''[x \mapsto s(x)]}$}
+\DisplayProof
+    $$
+    where $s''''[x \mapsto s(x)] = s''$. 
+    We can apply the induction hypothesis to $\ns{S'}{s[x\mapsto \perp]}{s'''}$ and $\ns{S'}{s[x\mapsto \perp]}{s''''}$, so we have $s''' = s''''$. This must also mean that $s' = s'''[x \mapsto s(x)] = s''''[x \mapsto s(x)] = s''$, so $s' = s''$.
+\end{itemize}
+This exhausts all possible cases and hence proves our theorem. 
+\end{proof}
+
+\subsubsection*{Variable allocation}
+
+While this first theorem is one that is generally considered useful to prove, the next is very specific to Rust and the way we defined our semantics. It states that a program no longer has any variables in memory after it terminates. 
+
+\begin{theorem}
+For every statement $S$, every state $s, s'$, if $\ns{S}{s}{s'}$, then for all variables $y$, if $\letterfunc{A}{y}s = -$ then $\letterfunc{A}{y}s' = -$.
+\end{theorem}
+
+\begin{proof}
+The proof proceeds by induction on the structure of $S$. We distinguish the following cases:
+\begin{itemize}[noitemsep]
+
+    \item $S$ = \texttt{skip} : if $\ns{\texttt{skip}}{s}{s'}$, then this can only be achieved by \skipns, which means $s=s'$. Therefore if $\letterfunc{A}{y}s = -$ then $\letterfunc{A}{y}s' = -$. 
+    
+    \item $S = x = e$ : assume $\ns{x = e}{s}{s'}$. Then the only rule that could have been applied is \assns, so  $s'$ must be $s[x \mapsto \letterfunc{A}{e}s][\mathcal{V}(e)\mapsto-]$ and $\letterfunc{A}{x}s = \perp$, $\letterfunc{A}{e}s \neq \perp$ and $\letterfunc{A}{e}s \neq -$. If one of these things had not been the case, we could not have applied any rules, and therefore our assumption `$\ns{S}{s}{s'}$' would be false. So we can assume these things to be true. Now we look at a variable $y$, chosen arbitrarily. We distinguish two cases:
+    \begin{itemize}[noitemsep]
+        \item $y=x$ : if $\letterfunc{A}{x}s \not = -$ there is nothing to prove. So assume $\letterfunc{A}{x}s = -$. However, this is contradictory to our assumption $\letterfunc{A}{x}s = \perp$. So this is not possible.
+        \item $y\not = x$ : we again assume $\letterfunc{A}{y}s = -$, as otherwise there is nothing to prove. Then we can again distinguish two cases: 
+        \begin{itemize}[noitemsep]
+            \item $y \in \mathcal{V}(e)$ \footnote{Note: in practice, it will not be possible for $y$ to be both an element of $\mathcal{V}(e)$ and $\letterfunc{A}{y}s = -$, as one of the assumptions of the rule [ass$_{\textrm{ns}}$] assumes $\letterfunc{A}{e}s \neq -$. However, we would need to prove this with induction on the shape of an expression and it turns out not to be necessary as the proof is rather simple anyways.} : in $s'$, we have $\mathcal{V}(e)\mapsto-$, so $y \mapsto -$, which means $\letterfunc{A}{y}s = -$.
+            \item $y \not \in \mathcal{V}(e)$ : as $x \not = y$ and $y \not \in \mathcal{V}(e)$, the value of $y$ is not any different from $s$ in $s'=s[x \mapsto \letterfunc{A}{e}s][\mathcal{V}(e)\mapsto-]$, so $\letterfunc{A}{y}s' = -$
+        \end{itemize}
+    \end{itemize}
+    This exhausts all possible cases and therefore proves the case where $S$ is of the form $x = e$.
+    
+    \item  $S = \letm{x}{S}$ : assume $\ns{\letm{x}{S}}{s}{s'}$. Then the rule that has been aplied last must be \letns. This has the following derivation tree 
+    $$\AxiomC{$\ns{S}{s[x\mapsto \perp]}{s''}$}
+\UnaryInfC{$\ns{\letm{x}{S}}{s}{s''[x \mapsto s(x)]}$}
+\DisplayProof$$
+This means $s' = s''[x \mapsto s(x)]$.
+We look at an arbitrary variable $y$ and assume $\letterfunc{A}{y}s' = -$ (otherwise we have nothing to prove). We again distinguish two cases:
+    \begin{itemize}[noitemsep]
+        \item $y=x$ : as $\letterfunc{A}{x}s = -$ and $x$ in $s''$ maps to $s(x)$, we can conclude $\letterfunc{A}{x}s'' = -$
+        \item $y\neq x$ : we are now interested in $\letterfunc{A}{y}s''$. We can apply the induction hypothesis to $\ns{S}{s[x\mapsto \perp]}{s''}$ as $\letterfunc{A}{y}s[x\mapsto \perp] = \letterfunc{A}{y}s = -$. So $\letterfunc{A}{y}s'' = -$. As $s' = s''[x \mapsto s(x)]$, the value of $y$ is not changed and we can conclude $\letterfunc{A}{y}s' = -$
+    \end{itemize}
+    \item $S$ = $S_1$; $S_2$ : assume $\ns{S_1;S_2}{s}{s'}$ (NB: the accents $'$ are different than in the definition of the natural semantics). Then the last rule that has been applied must be \compns, which gives the following derivation tree 
+    $$\AxiomC{$\ns{S_1}{s}{s''} $}
+\AxiomC{$\ns{S_2}{s''}{s'}$}
+\BinaryInfC{$\ns{S_1;S_2}{s}{s'}$}
+\DisplayProof$$
+Now assume $y$ to be an arbitrary variable and $\letterfunc{A}{y}s = -$. We can apply the induction hypothesis to $\ns{S_1}{s}{s''}$, so we know $\letterfunc{A}{y}s'' = -$. We can then again apply the induction hypothesis to $\ns{S_2}{s''}{s'}$. So we know $\letterfunc{A}{y}s' = -$, which was what was to be proven.
+\end{itemize} 
+This exhausts all possible shapes of our statement $S$, and hence proves the theorem.
+\end{proof}
+
+Note that this means that after a program terminates, none of the results are available anymore. To make use of the data, you would have to write it to a file or some other IO device. This is a significant break from the exposition of \cite{nielson1992semantics} where the state of a terminated program shows the values of the variables at the end and you can thus `access' the results of the calculations. However, this is not how a computer normally works: after a program terminates, all memory will have to be freed. 
+
+\subsection{Conclusion}
+This concludes our section of the big step semantics. As these semantics are rather coarse-grained, we will shift our focus to the small step semantics from now on. In the end, we will prove that the two are equivalent.
+
+
+\section{Semantics: Small step}
+We now move on to a small step semantics. We mostly use the same mathematical framework as in the big step semantics, unless stated otherwise. Our small step semantics, as stated above, has rules of the form $\sos{S}{L}{s} \Rightarrow \sos{S'}{L'}{s'}$, where $S$, $S'$ are statements and $s$, $s'$ are states as defined above. To properly define what $L$ and $L'$ are, we first need to define what is meant by `a program instruction'. 
+
+\begin{definition}
+\label{programinstruction}
+A program instruction $I$ has the following form:
+$$I ::= S \mid (x,v)$$
+where $S$ is a statement, $x$ a variable from \textbf{Var} and $v$ an element from $\mathbb{Z}_{ext}$.
+\end{definition}
+
+Informally, a program instruction is either a statement, or some specific instruction that cannot be programmed by a user, but will be used by us to do some bookkeeping along the way. In the remainder of the thesis, we will mostly use $S$ as a letter for both, but will explicitly state whether that is a program instruction or statement. 
+
+We can now look at our \emph{lists}:
+
+\begin{definition}
+\label{lists}
+A \emph{list} $L$ is of the form 
+\begin{itemize}[noitemsep]
+    \item $L = \nil$
+    \item $L = I::L'$, where $I$ is a program instruction and $L'$ is again a list. 
+\end{itemize}
+\end{definition}
+
+We can now state that our $L$ and $L'$ from the operational semantic rules should be lists as defined in definition \ref{lists}. We will use this list as a sort of stack to keep track of what program parts need to be executed later on. This idea is not new. It has also been proposed by, for example, \cite{appel2007cminor}. 
+
+\subsection{Operational semantics rules}
+\begin{definition} 
+\label{os}
+We define the following semantic derivation rules (name on the left):
+
+\begin{tabular}{p{5em}p{18em}p{13em}}
+\loadsos &
+\centering$\sos{\texttt{skip}}{I::L}{s} \Rightarrow \sos{I}{L}{s}$ & \medskip\\
+
+\compsos &
+\centering$\sos{S_1; S_2}{L}{s} \Rightarrow \sos{S_1}{S_2::L}{s}$ & \medskip\\
+
+\asssos &
+\centering $\sos{x = e}{L}{s} \Rightarrow \sos{\texttt{skip}}{L}{s[x \mapsto \letterfunc{A}{e}s][\mathcal{V}(e)\mapsto-]}$ & \medskip\\
+
+\letsos &
+\centering $\sos{\letm{x}{S}}{L}{s} \Rightarrow \sos{S}{(x,s(x))::L}{s[x\mapsto \perp]}$ & \medskip\\
+
+\setsos &
+\centering$\sos{(x,v)}{L}{s} \Rightarrow \sos{\texttt{skip}}{L}{s[x\mapsto v]}$ & \medskip\\
+\end{tabular} 
+Where $\mathcal{V}(e)\mapsto-$ is an abbreviation for `for all $x \in \mathcal{V}(e)$, $x \mapsto -$'.
+\end{definition} 
+Note that we cannot take a step anymore when in $\sos{\texttt{skip}}{\texttt{Nil}}{s}$; this is the end state. 
+
+The \loadsos ~rule is used to pop an instruction from the stack. The \compsos ~rule pushes the second part of the composition to the list. The idea is that you can then freely execute the first part and pop the second part when the first part finishes. The \asssos ~rule changes the state in a similar way as was done in the natural semantics. The \letsos ~rule changes the state to reflect that $x$ now has been declared. It also pushes a tuple onto the list stack. After the body of the \texttt{let} terminates, $x$ should be reset to what it was before the \texttt{let}-statement. Pushing this tuple to the stack is a way to make that happen. When that tuple is popped from the list, the \setsos ~rule resets the value in the state. 
+
+\begin{infdefinition}
+We will be using $\sos{S}{L}{s} \Rightarrow ^{*} \sos{S'}{L'}{s'}$ to indicate we can go from $\sos{S}{L}{s}$ to $\sos{S'}{L'}{s'}$ in zero or more steps, as defined in \ref{os}.
+\end{infdefinition}
+
+
+\subsection{Properties of our semantic rules}
+
+\subsubsection*{Concerning lists and recursive statements}
+In this section, we will prove some properties about the lists in combination with the semantics. For example, we will see that it is irrelevant what is in the list for a statement that is currently executing. 
+In order to prove these properties, we need some helping lemmas. These lemmas help us break down the recursive statements: the composition and the \texttt{let}-statement. Proving this now will save us some work later on, also in the following sections.  
+
+The first of these lemmas states that if we have a derivation from a composition to a \sk, we must have first pushed the second part to the list and then have executed the first part. Then you pop the second part from the list and execute that. 
+
+\begin{lemma}
+\label{breakingdowncomp}
+For every statement $S_1$, $S_2$, for every list $L$, for every state $s$, $s'$, if $\sos{S_1; S_2}{L}{s} \Rightarrow ^{*} \sos{\texttt{skip}}{L}{s'}$, then it must be the case that $\sos{S_1;S_2}{L}{s}  \Rightarrow \sos{S_1}{S_2::L}{s} \Rightarrow ^{*} \sos{\texttt{skip}}{S_2::L}{s''} \Rightarrow \sos{S_2}{L}{s''} \Rightarrow ^{*} \sos{\texttt{skip}}{L}{s'}$ for some state $s''$. 
+\end{lemma}
+
+\begin{proof}
+Assume $\sos{S_1; S_2}{L}{s } \Rightarrow ^{*} \sos{\texttt{skip}}{L}{s'}$. Now look at $\sos{S_1; S_2}{L}{s}$. We know there must be a derivation. The only possible rule is \compsos, so we have $\sos{S_1; S_2}{L}{s} \Rightarrow \sos{S_1}{S_2::L}{s}$. Now we see that our list has grown by one item. However we know there is a derivation and it ends with the list $L$, instead of $S_2::L$. So at some point in the derivation this should be removed from the list. The only possible rule that could have done that is \loadsos. So we must have $\sos{\texttt{skip}}{S_2::L}{s''} \Rightarrow \sos{S_2}{L}{s''}$ at some point in the derivation. Therefore we have $\sos{S_1; S_2}{L}{s} \Rightarrow \sos{S_1}{S_2::L}{s} \Rightarrow ^{*} \sos{\texttt{skip}}{S_2::L}{s''} \Rightarrow \sos{S_2}{L}{s''} \Rightarrow ^{*} \sos{\texttt{skip}}{L}{s'}$, which was to be proven.
+\end{proof}
+
+We have a similar lemma to the \texttt{let}-statement. We will not be proving that one as rigorously, as the proof is very similar to the one of the previous lemma. 
+
+\begin{lemma}
+\label{breakingdownlet}
+For every statement $S$, for every list $L$, for every state $s$, $s'$, if $\sos{\letm{x}{S}}{L}{s} \Rightarrow ^{*} \sos{\texttt{skip}}{L}{s'}$, then it must be the case that $\sos{\letm{x}{S}}{L}{s} \Rightarrow ^{*} \sos{\texttt{skip}}{(x,s(x))::L}{s''} \Rightarrow \sos{(x,s(x))}{L}{s''} \Rightarrow \sos{\texttt{skip}}{L}{s'}$ for some state $s''$. 
+\end{lemma}
+
+\begin{proof}
+The proof is similar to lemma \ref{breakingdowncomp}. Note that we can actually say some more about the relation between $s''$ and $s'$ because of how the rule \setsos works. 
+\end{proof}
+
+We are now ready to prove that when executing a program instruction, it is irrelevant what is in the list.  
+
+\begin{proposition}
+\label{listsdontmatter}
+For every program instruction $S$, every state $s$, $s'$, if $\sos{S}{L'}{s} \Rightarrow ^{*} \sos{\texttt{skip}}{L'}{s'}$ for some list $L'$, then we have $\sos{S}{L}{s} \Rightarrow ^{*} \sos{\texttt{skip}}{L}{s'}$ for all lists $L$. 
+\end{proposition}
+
+\begin{proof}
+We know that there must be a derivation from $\sos{S}{L'}{s}$ to $\sos{\texttt{skip}}{L'}{s'}$, so $S$ must be of one of the forms from definition \ref{os}. We therefore prove the proposition by induction on the form of the program instruction $S$.
+
+\begin{itemize}[noitemsep]
+    \item $S = \texttt{skip}$ : we look at $\sos{\texttt{skip}}{L}{s}$. This is already of the correct form, as $s=s'$, so we can evaluate to the desired state in zero steps, which proves this case. 
+    
+    \item $S = x =  e$ : assume $\sos{x = e}{L'}{s} \Rightarrow ^{*} \sos{\texttt{skip}}{L'}{s'}$. Then we know the rule that must have been applied first is \asssos, so we have 
+    $$\sos{x = e}{L'}{s} \Rightarrow \sos{\texttt{skip}}{L'}{s[x \mapsto \letterfunc{A}{e}s][\mathcal{V}(e)\mapsto-]}$$
+    which is of the desired form. So it must be that $s' = s[x \mapsto \letterfunc{A}{e}s][\mathcal{V}(e)\mapsto-]$. Now we look at $\sos{x = e}{L}{s}$. The only rule we can apply is \asssos, so we get 
+    $$\sos{x = e}{L}{s} \Rightarrow \sos{\texttt{skip}}{L}{s [x \mapsto \letterfunc{A}{e}s][\mathcal{V}(e)\mapsto-]}$$
+    which is of the desired form, and has the right $s'$. This proves this case. 
+    
+    \item $S = (v,e)$ : assume $\sos{(v,e)}{L'}{s} \Rightarrow ^{*} \sos{\texttt{skip}}{L'}{s'}$. Then we know the rule that must have been applied first was \setsos. So we get
+    $$\sos{(v,e)}{L'}{s} \Rightarrow ^{*} \sos{\texttt{skip}}{L'}{s[x\mapsto v]}$$ 
+    This is of the desired form, so it must be the case that $s' = s[x\mapsto v]$. Now we look at $\sos{(v,e)}{L}{s}$. The only rule that can be applied is \setsos, so we get $$\sos{(v,e)}{L}{s} \Rightarrow  \sos{\texttt{skip}}{L}{s[x\mapsto v]}$$
+    which is of the desired form, and has the right $s'$. This proves this case.
+    
+    \item $S = S_1; S_2$ : assume $\sos{ S_1;S_2}{L'}{ s} \Rightarrow ^{*} \sos{\texttt{skip}}{L'}{s'}$. Then by \compsos and lemma \ref{breakingdowncomp}, we have 
+    $$\sos{S_1;S_2}{L'}{s} \Rightarrow \sos{S_1}{S_2::L'}{s} \Rightarrow ^{*} \sos{\texttt{skip}}{S_2::L'}{s''}$$ $$\Rightarrow \sos{S_2}{L'}{s''} \Rightarrow ^{*} \sos{\texttt{skip}}{L'}{s'} ~( * )$$
+    Now we look at $\sos{S_1;S_2}{L}{s}$ with $L$ arbitrary. We can apply the rule \compsos to see $$\sos{S_1;S_2}{L}{s} \Rightarrow \sos{S_1}{S_2::L}{s}$$ Now we can apply the induction hypothesis to $\sos{S_1}{S_2::L}{s}$, as we have $\sos{S_1}{L'}{s} \Rightarrow ^{*} \sos{\texttt{skip}}{L'}{s''}$ by $( * )$. So we get 
+    $$\sos{S_1}{S_2::L}{s} \Rightarrow ^{*} \sos{\texttt{skip}}{S_2::L}{s''}$$
+    Then by \loadsos, 
+    $$\sos{\texttt{skip}}{S_2::L}{s''} \Rightarrow \sos{S_2}{L}{s''}$$
+    Now we can apply the induction hypothesis to $\sos{S_2}{L}{s''}$, as we have $\sos{S_2}{L'}{s''} \Rightarrow ^{*} \sos{\texttt{skip}}{L'}{s'}$ by $( * )$. We get 
+    $$\sos{S_2}{L}{s''} \Rightarrow ^{*} \sos{\texttt{skip}}{L}{s'}$$
+    That means we can form the derivation sequence $$\sos{S_1;S_2}{L}{s} \Rightarrow \sos{S_1}{S_2::L}{s} \Rightarrow ^{*} \sos{\texttt{skip}}{S_2::L}{s''} $$ $$ \Rightarrow \sos{S_2}{L}{s''} \Rightarrow ^{*} \sos{\texttt{skip}}{L}{s'}$$
+    This gives us 
+    $$\sos{S_1;S_2}{L}{s} \Rightarrow ^{*} \sos{\texttt{skip}}{L}{s'}$$
+    which was to be proven. 
+        
+    \item $S = \letm{x}{S'}$ : assume $\sos{\letm{x}{S'}}{L'}{s} \Rightarrow ^{*} \sos{\texttt{skip}}{L'}{s'}$. There is only one rule that could have been applied first, \letsos, which gives us 
+    $$\sos{\letm{x}{S'}}{L'}{s} \Rightarrow \sos{S}{(x,s(x))::L'}{s[x\mapsto v]} \Rightarrow ^{*} \sos{\texttt{skip}}{L'}{s'}$$
+    By lemma \ref{breakingdownlet} we get 
+    $$\sos{\letm{x}{S'}}{L'}{s} \Rightarrow \sos{S}{(x,s(x))::L'}{s[x\mapsto v]}$$ $$\Rightarrow ^{*} \sos{\texttt{skip}}{(x,s(x))::L'}{s''} \Rightarrow \sos{(x,s(x))}{L'}{s''} \Rightarrow \sos{\texttt{skip}}{L'}{s'} ~ ( * )$$
+    From this and the rule \setsos, we can conclude that $s' = s''[x\mapsto v]$.
+    Now we look at $\sos{\letm{x}{S'}}{L}{s}$ for some list $L$. Then we can apply \letsos to get 
+    $$\sos{\letm{x}{S'}}{L}{s} \Rightarrow \sos{S}{(x,s(x))::L}{s[x\mapsto v]}$$
+    We can now apply the induction hypothesis to $\sos{S}{(x,s(x))::L}{s[x\mapsto v]}$, as we know $\sos{S}{(x,s(x))::L'}{s[x\mapsto v]} \Rightarrow ^{*} \sos{\texttt{skip}}{(x,s(x))::L'}{s''}$ by $( * )$. We get
+    $$\sos{S}{(x,s(x))::L}{s[x\mapsto v]} \Rightarrow ^{*} \sos{\texttt{skip}}{(x,s(x))::L}{s''}$$
+    By the rules \loadsos ~and \setsos, we get 
+    $$\sos{\texttt{skip}}{(x,s(x))::L}{s''} \Rightarrow \sos{(x,s(x))}{L}{s''} \Rightarrow \sos{\texttt{skip}}{L}{s''[x \mapsto v]}$$
+    This is of the desired form and has the right $s'$. This proves this case.
+\end{itemize}
+This exhausts all possible cases and hence proves the theorem.
+\end{proof}
+
+Intuitively, this makes sense. If we look at the rules, we see that we can only move something from the list to the front if the front only contains a \sk ~statement, and that thus everything that had been there, must have finished evaluating. 
+
+We will now do a simple proof to show that in a composition, the execution of $S_1$ does not depend on what $S_2$ entails. 
+
+\begin{proposition}
+For every statement $S_1$, $S_2$, for every list $L$, for every state $s$, $s'$, if $\sos{S_1}{L}{s} \Rightarrow ^{*} \sos{\sk}{L}{s}$, then $\sos{S_1;S_2}{L}{s}$ $\Rightarrow ^{*} \sos{S_2}{L}{s}$
+\end{proposition}
+
+\begin{proof}
+Assume $\sos{S_1}{L}{s} \Rightarrow ^{*} \sos{\texttt{skip}}{L}{s}$ and look at $\sos{S_1;S_2}{L}{s}$. Then by \compsos
+$$\sos{S_1;S_2}{L}{s} \Rightarrow  \sos{S_1}{S_2::L}{s}$$
+Now by \ref{listsdontmatter} and the fact that $\sos{S_1}{L}{s} \Rightarrow ^{*} \sos{\sk}{L}{s}$, we know $\sos{S_1}{S_2::L}{s} \Rightarrow ^{*} \sos{\sk}{S_2::L}{s}$. Then from \loadsos
+$$\sos{\sk}{S_2::L}{s} \Rightarrow \sos{S_2}{L}{s}$$
+Therefore, we get
+$$\sos{S_1;S_2}{L}{s} \Rightarrow ^{*} \sos{S_2}{L}{s}$$
+which was to be proven.
+\end{proof}
+
+
+\subsubsection*{Determinism}
+Another major desirable property of our semantics is \emph{determinism}. This means that running the program will always have the same results. Therefore, we want our derivation system to always return the same result. The proof is similar to that of the natural semantics.
+
+\begin{theorem}
+For every program instruction $S$, every state $s, s', s''$, every list $L$, if $\sos{S}{L}{s} \Rightarrow ^{*} \sos{\texttt{skip}}{L}{s'}$ and $\sos{S}{L}{s} \Rightarrow ^{*} \sos{\texttt{skip}}{L}{s''}$, then $s' = s''$.
+\end{theorem}
+
+\begin{proof}
+The proof proceeds by induction on the structure of $S$, the program instruction. We distinguish the following cases:
+\begin{itemize}[noitemsep]
+    \item $S$ = \texttt{skip} : if $\sos{\texttt{skip}}{L}{s} \Rightarrow ^{*} \sos{\texttt{skip}}{L}{s'}$ and $\sos{\texttt{skip}}{L}{s} \Rightarrow ^{*} \sos{\texttt{skip}}{L}{s''}$, then no steps have to be taken, or could have been taken, and we obviously have $s' = s''$.
+    \item $S = x = e$ : $\sos{x= e}{L}{s} \Rightarrow ^{*} \sos{\texttt{skip}}{L}{s'}$ and $\sos{x = e}{L}{s} \Rightarrow ^{*} \sos{\texttt{skip}}{L}{s''}$, then the rule that must have been applied is \asssos. This means that exactly one step has been taken and that $s'=s[x \mapsto \letterfunc{A}{e}s][\mathcal{V}(e)\mapsto-]$ and $s'' = s[x \mapsto \letterfunc{A}{e}s][\mathcal{V}(e)\mapsto-]$, so $s' = s''$.
+    \item $S = (x,v)$ : if $\sos{(x,v)}{L}{s} \Rightarrow ^{*} \sos{\texttt{skip}}{L}{s'}$ and $\sos{(x,v)}{L}{s} \Rightarrow ^{*} \sos{\texttt{skip}}{L}{s''}$, then the rule that must have been applied next is \setsos. This means that exactly one step has been taken and that $s' = s[x\mapsto v]$ and $s'' = s[x\mapsto v]$, so $s' = s''$.
+    \item $S = S_1; S_2$ : if $\sos{S_1; S_2}{L}{s} \Rightarrow ^{*} \sos{\texttt{skip}}{L}{s'}$ and $\sos{S_1; S_2}{L}{s} \Rightarrow ^{*} \sos{\texttt{skip}}{L}{s''}$, then the only applicable rule is \compsos. This means that we have 
+    $$\sos{S_1; S_2}{L}{s} \Rightarrow \sos{S_1}{S_2::L}{s} \Rightarrow ^{*} \sos{\texttt{skip}}{L}{s'}$$
+    and 
+    $$\sos{S_1; S_2}{L}{s} \Rightarrow \sos{S_1}{S_2::L}{s}  \Rightarrow ^{*} \sos{\texttt{skip}}{L}{s''}$$
+    By Proposition \ref{breakingdowncomp}, we know that the latter $\Rightarrow ^{*}$ can be broken up into smaller parts, so we have 
+     $$\sos{S_1}{S_2::L}{s} \Rightarrow ^{*} \sos{\texttt{skip}}{S_2::L}{s'''} \Rightarrow \sos{S_2}{L}{s'''} \Rightarrow ^{*} \sos{\texttt{skip}}{L}{s'}$$
+     and
+     $$\sos{S_1}{S_2::L}{s} \Rightarrow ^{*} \sos{\texttt{skip}}{S_2::L}{s''''} \Rightarrow \sos{S_2}{L}{s''''} \Rightarrow ^{*} \sos{\texttt{skip}}{L}{s''}$$
+     for some $s'''$ and $s''''$. Now we can apply the induction hypothesis to $\sos{S_1}{S_2::L}{s} \Rightarrow ^{*} \sos{\texttt{skip}}{S_2::L}{s'''}$ and $\sos{S_1}{S_2::L}{s} \Rightarrow ^{*} \sos{\texttt{skip}}{S_2::L}{s''''}$, so we have $s''' = s''''$. We then get
+     $$\sos{S_2}{L}{s'''} \Rightarrow ^{*} \sos{\texttt{skip}}{L}{s'}$$
+     and 
+     $$\sos{S_2}{L}{s'''} \Rightarrow ^{*} \sos{\texttt{skip}}{L}{s''}$$
+     to which we again can apply the induction hypothesis to get $s' = s''$.
+     
+    \item $S = \letm{x}{S'}$ : assume $\sos{\letm{x}{S'}}{L}{s} \Rightarrow ^{*} \sos{\texttt{skip}}{L}{s'}$ and $\sos{\letm{x}{S'}}{L}{s} \Rightarrow ^{*} \sos{\texttt{skip}}{L}{s''}$. The only rule that can be applied is \letsos. This gives us
+    $$\sos{\letm{x}{S'}}{L}{s} \Rightarrow \sos{S'}{(x,s(x))::L}{s[x\mapsto \perp]} \Rightarrow ^{*} \sos{\texttt{skip}}{L}{s'}$$
+    and 
+    $$\sos{\letm{x}{S'}}{L}{s} \Rightarrow \sos{S'}{(x,s(x))::L}{s[x\mapsto \perp]} \Rightarrow ^{*} \sos{\texttt{skip}}{L}{s''}$$
+    By Proposition \ref{breakingdownlet}, we know that the latter $\Rightarrow ^{*}$ can be broken up into smaller parts, so we have 
+    $$\sos{\letm{x}{S}}{L}{s} \Rightarrow \sos{S'}{(x,s(x))::L}{s[x\mapsto \perp]} \Rightarrow ^{*}$$ $$\sos{\texttt{skip}}{(x,s(x))::L}{s'''} \Rightarrow \sos{(x,s(x))}{L}{s'''} \Rightarrow \sos{\texttt{skip}}{L}{s'}$$
+    and 
+    $$\sos{\letm{x}{S}}{L}{s} \Rightarrow \sos{S'}{(x,s(x))::L}{s[x\mapsto \perp]} \Rightarrow ^{*}$$ $$\sos{\texttt{skip}}{(x,s(x))::L}{s''''} \Rightarrow \sos{(x,s(x))}{L}{s''''} \Rightarrow \sos{\texttt{skip}}{L}{s''}$$
+    Now we can apply the induction hypothesis to 
+    $$\sos{S'}{(x,s(x))::L}{s[x\mapsto \perp]} \Rightarrow ^{*} \sos{\texttt{skip}}{(x,s(x))::L}{s'''}$$
+    and 
+    $$\sos{S'}{(x,s(x))::L}{s[x\mapsto \perp]} \Rightarrow ^{*} \sos{\texttt{skip}}{(x,s(x))::L}{s''''}$$
+    That gives us $s''' = s''''$. Then $\sos{(x,s(x))}{L}{s'''} \Rightarrow \sos{\texttt{skip}}{L}{s'''[x\mapsto v]}$, so $s' = s'''[x\mapsto v] = s''$, which means $s'=s''$.
+\end{itemize}
+This exhausts all possible cases and hence proves the theorem.
+\end{proof}
+
+\subsection{Conclusion}
+This concludes our section on the small step semantics. We saw that they are similar to the big step semantics, but do not include the specific conditions in the assignment. In order to make sure that is adhered to those conditions, we define a second derivation system, which is the focus of the following section. 
+
+\section{Compile time check}
+As mentioned before, all checks are done compile time. However, a semantic description is a description of what is supposed to happen run time. In the natural semantics section we combined the two, but to really model Rust properly, it is necessary to separate the two. 
+
+In this section, we look at a compile time checker derivation system to model what happens in the Rust compiler. The checker will always result in either \tr ~or \fa ~to indicate whether the program is correct according to Rust's rules. This checker will have a lot of similarities to the semantics, but will not perform actual computations. 
+
+First, we will introduce some new definitions, then give the derivation system and lastly prove some properties of the system and of the system in combination with the semantics of the previous section. 
+
+\subsection{Definitions}
+
+Because we will not be doing actual computations, but instead just bookkeeping of whether something is a value, we do not need a state as in the previous section, but will rather use what we will call a \emph{reduced state}. 
+
+\begin{infdefinition}
+$\star$ will be used to indicate that a variable has some numerical value from $\mathbb{Z}$, but we are not interested in what this value is.
+\end{infdefinition}
+
+\begin{definition}
+\textbf{RState} is the set of functions $r: \textbf{Var} \to \{-, \perp, \star \}$
+\end{definition}
+
+The interpretation of $\star$ here is that the variable has a value. However, for compile time checking, it is irrelevant what that value is, so we leave that out. We just want to know that the variable has been assigned a certain value.
+
+However, in proofs further on, it will prove to be desirable to be able to talk about a state and a reduced state being \emph{related}.
+
+\begin{definition}
+A state $s\in\textbf{State}$ and a reduced state $r\in\textbf{RState}$ are said to be \emph{related} if for all $x\in\textbf{Var}$, we have 
+$$r(x) = \perp \iff s(x) = \perp$$
+and
+$$r(x) = - \iff s(x) = -$$
+\end{definition}
+
+This means $r(x) = \star \iff s(x)\in \mathbb{Z}$. 
+
+We are now ready for the actual compile time checker.
+
+\begin{definition}
+\label{compiletimechecker}
+The \emph{compile time checker} is a derivation system that has the following rules
+\begin{align*}
+\cc{\texttt{skip}}{\texttt{Nil}}{r} & \to \texttt{true}  \\
+\cc{\texttt{skip}} {P::L}{ r}       & \to \cc{P}{L}{r}  \\
+\cc{S_1; S_2}{L}{r}                 & \to \cc{S_1}{S_2::L}{r}  \\
+\cc{x=e}{L}{r}                     & \to \cc{\sk}{L}{r[x\mapsto \star][\mathcal{V}(e) \mapsto -]} \\
+                                    & \textrm{if }r(x) = \perp \textrm{ and } \forall y \in \mathcal{V}(e), r(y) = \star \\
+                                    & \to \texttt{false} \textrm{ otherwise}\\
+\cc{\letm{x}{S}}{L}{r} & \to \cc{S}{(x,r(x))::L}{r[x\mapsto \perp]} \\
+\cc{(x,v)}{L}{r}                    & \to \cc{\texttt{skip}}{L}{r[x \mapsto v]}
+\end{align*}
+\end{definition}
+
+\subsection{Properties}
+We will now look at some interesting properties of the compile time checker. First of all, we will prove that the checker always finishes, independent on what the program that needs to be checked is. While a program might run forever, the compiler should always finish. In order to prove this, we will assign a (non-negative) `length' to every possible input of the checker and show that with every step the checker takes, this `length' decreases. This in turn gives us a decreasing sequence of non-negative numbers. This sequence must always be finite, since there is no infinite decreasing sequences of non-negative numbers. 
+
+\begin{theorem}
+\label{termination}
+The compile checker from definition \ref{compiletimechecker} always terminates.
+\end{theorem}
+
+Before we proof this theorem, we first define the aforementioned `length'. 
+
+\begin{definition}
+\label{length}
+The \emph{length} is a function $|.|: \textbf{Lists} \times \textbf{ProgInstr} \to \mathbb{N}$ which is defined by $|(P,L)| = |P|+|L|$.
+
+The length on a list $|L|$ is recursively defined by 
+\begin{align*}
+|\nil| & = 0\\
+|B::L| & = |B| + |L|
+\end{align*}
+Futhermore, for every program instruction we have
+\begin{align*}
+|\sk| & = 1\\
+|S_1, S_2| & = |S_1| + |S_2| + 1 \\
+|x=e| & = 2\\
+|\letm{x}{S}| & = |S| + 3 \\
+|(x,v)| & = 2 \\
+\end{align*}
+Lastly, we define that $|\texttt{false}|$ and $|\texttt{true}|$ are 0.
+
+Together this gives us a definition of the length of a program and list combined.
+\end{definition}
+
+\begin{proof}
+\emph{Of theorem \ref{termination}.}
+We will show termination by proving that with every step from \ref{compiletimechecker}, the length as defined in \ref{length} decreases. We will look at the different possible cases.
+
+\begin{itemize}[noitemsep]
+    \item $\cc{\texttt{skip}}{\texttt{Nil}}{r} \to \texttt{true}$ gives $1 \to 0$
+    \item $\cc{\texttt{skip}}{P::L}{ r} \to \cc{P}{L}{r}$ gives $1 + |P| + |L| \to |P| + |L|$
+    \item $\cc{S_1; S_2}{L}{r} \to \cc{S_1}{S_2::L}{r}$ gives $|S_1| + |S_2| + 1 + |L| \to |S_1| + |S_2::L| = |S_1| + |S_2| + |L|$
+    \item $\cc{x=e}{L}{r} \to \cc{\texttt{skip}}{L}{r[x\mapsto \star][\mathcal{V}(e) \mapsto -]}$ gives $2 + |L| \to 1 + |L|$
+    \item $\cc{x=e}{L}{r} \to \fa$ gives $2 + |L| \to 0$
+    \item $\cc{\letm{x}{S}}{L}{r} \to \cc{S}{(x,r(x))::L}{r[x\mapsto \perp]}$ gives $|S|+3+|L|\to |S|+2+|L|$
+    \item $\cc{(x,v)}{L}{r} \to \cc{\texttt{skip}}{L}{r[x \mapsto v]}$ gives $2 + |L| \to 1 + |L|$
+\end{itemize}
+As every one of these steps shows a decrease in the length, we can conclude that the derivation must terminate (by the reasoning explained above).
+\end{proof}
+
+
+\subsection{Equivalence with our small step semantics}
+Now we have both a big step semantics and a small step semantics, one would hope these two to be equivalent. First of all, one should notice that the big step semantics has the compile check rules embedded in the semantics, while the small step semantics has them separated in the form of the compile time check. That makes that in the proof, we will prove the big step semantics to be equivalent to the small step semantics combined with the compile time checker. 
+
+In order to prove the equivalence, we will first prove that one implies the other, and then prove that the other implies the first. 
+
+\begin{lemma}
+\label{nsimpsos}
+For all statements $S$, $S'$, all states $s$, $s'$, reduced states $r$, $r'$ with $r$ related to $s$, $r'$ related to $s'$, for all lists $L$: if $\ns{S}{s}{s'}$ then $\sos{S}{L}{s} \Rightarrow ^{*} \sos{\sk}{L}{s'}$. Also, if $\cc{\sk}{L}{r'} \to ^{*} \tr$, then $\cc{S}{L}{r} \to ^{*} \tr$.
+\end{lemma}
+\begin{proof}
+The proof proceeds by induction on the shape of the derivation tree. 
+\begin{itemize}[noitemsep]
+    \item We assume the last rule applied was \skipns. This means $\ns{\sk}{s}{s}$. Then for any list $L$, we have $\sos{\sk}{L}{s}$ leading in zero steps to the required end state. 
+    
+    Now assume $\cc{\sk}{L}{r} \to \tr$ with $s$ related to $r$. This is already what needed to be proven in the second part of the lemma. 
+    \item We assume the last rule applied was \assns. This means $\ns{x=e}{s}{s[x\mapsto\letterfunc{A}{e}s][\mathcal{V}(e)\mapsto -]}$. The conditions state that $\letterfunc{A}{x}s = \perp$, $\letterfunc{A}{e}s \neq \perp$ and $\letterfunc{A}{e}s \neq -$. Then we start with $\sos{x=e}{L}{s}$ for any $L$. Then we can apply \asssos to get 
+    $$\sos{x=e}{L}{s} \Rightarrow \sos{\sk}{L}{s[x\mapsto\letterfunc{A}{e}s][\mathcal{V}(e)\mapsto -]}$$ 
+    This is the required end state. 
+    
+    Now assume $\cc{\sk}{L}{r'} \to ^{*} \tr$ and we know from the first part that $r' = r[x\mapsto\star][\mathcal{V}(e)\mapsto -]$. We know $\letterfunc{A}{x}s = \perp$, $\letterfunc{A}{e}s \neq \perp$ and $\letterfunc{A}{e}s \neq -$. 
+    Then we also know that 
+    $$\cc{x=e}{L}{r} \to \cc{\sk}{L}{r[x\mapsto \star ][\mathcal{V}(e)\mapsto -]} \to ^{*} \tr$$
+    as $\letterfunc{A}{e}s \neq \perp$ and $\letterfunc{A}{e}s \neq -$ implies that $\forall y \in \mathcal{V}(e), r(y) = \star $.
+%    
+    \item We assume the last rule applied was \compns. This means
+    $$\centering \AxiomC{$\ns{S_1}{s}{s''}$}
+\AxiomC{$\ns{S_2}{s''}{s'}$}
+\BinaryInfC{$\ns{S_1; S_2}{s}{s'}$}
+\DisplayProof$$
+    If we now look at $\sos{S_1;S_2}{L}{s}$ for some list $L$, we see that we can apply \compsos to get 
+    $$\sos{S_1;S_2}{L}{s} \Rightarrow \sos{S_1}{S_2::L}{s}$$
+    We can now apply the Induction Hypothesis to $\sos{S_1}{S_2::L}{s}$ as we have $\ns{S_1}{s}{s''}$. We get 
+    $$\sos{S_1}{S_2::L}{s} \Rightarrow ^{*} \sos{\sk}{S_2::L}{s''} $$
+    Then by \loadsos, we have 
+    $$\sos{\sk}{S_2::L}{s''} \Rightarrow \sos{S_2}{L}{s''}$$
+    Now we can apply the Induction Hypothesis again, as we have $\ns{S_2}{s''}{s'}$. This gives us
+    $$\sos{S_2}{L}{s''} \Rightarrow ^{*} \sos{\sk}{L}{s'}$$
+    This all combined gives us
+    $$\sos{S_1;S_2}{L}{s} \Rightarrow ^{*} \sos{\sk}{L}{s'}$$
+    which was to be proven.
+    
+    The second part of the lemma is a bit more tricky. Assume $\cc{\sk}{L}{r'} \to ^{*} \tr$ $( * )$ for some list $L$ in the above derivation. We are interested in the derivation of $\cc{S_1;S_2}{L}{r}$. We can immediately move a step, so
+    $$\cc{S_1;S_2}{L}{r} \to \cc{S_1}{S_2::L}{r}$$
+    This leaves us with the question on what we can say about $\cc{S_1}{S_2::L}{r}$. It seems logical to apply the same Induction Hypothesis (IH) as was done above the first time (on $\ns{S_1}{s}{s''}$). This IH tells us that if $\cc{\sk}{S_2::L}{r''} \to ^{*} \tr$, then $\cc{S_1}{S_2::L}{r} \to ^{*} \tr$. Therefore, in order to be able to apply the IH, we need to say something about $\cc{\sk}{S_2::L}{r''}$. By the loading rule, we get
+    $$\cc{\sk}{S_2::L}{r''} \to \cc{S_2}{L}{r''}$$
+    This still does not tell us whether it will derive to \texttt{true}. However, it seems that we could again use the IH, in the same way it was done above the \emph{second} time (on $\ns{S_2}{s''}{s'}$). This IH states that if $\cc{\sk}{L}{r'} \to ^{*} \tr$, then $\cc{S_2}{L}{r''} \to ^{*} \tr$. The condition is true per assumption $( * )$. Therefore, we have $\cc{S_2}{L}{r''} \to ^{*} \tr$. So that gives us
+    $$\cc{\sk}{S_2::L}{r''} \to \cc{S_2}{L}{r''} \to ^{*} \tr$$
+    and per the first application of the IH. Finally we have
+    $$\cc{S_1;S_2}{L}{r} \to \cc{S_1}{S_2::L}{r}  \to ^{*} \tr$$
+    which was to be proven. 
+% TB: if [skip,L,r'] -> true then [S1;S2,L,r] -> true
+% Per inductie
+% We kunnen in elk geval aannemen [skip,L,r'] -> true
+% We hebben vanwege de comp regel [S1;S2,L,r] -> [S1,S2::L,r]
+% Dan dus de vraag wat [S1,S2::L,r] is
+% We willen de IH toepassen. <S1,s> -> s''.  Om dat te doen moeten we weten wat [skip,S2::L,r''] is
+% Daar kijken we dan naar. We kunnen de load regel doen [skip,S2::L,r''] -> [S2,L,r'']
+% Dan de vraag wat [S2,L,r''] is. We kunnen de IH toepassen met <S2,s''> -> s' als [skip,L,r'] -> true
+% Dat is het geval per aanname van wat er bewezen moest worden. 
+% Dus [S2,L,r''] -> true
+% En daarmee [skip,S2::L,r''] -> true
+% En dan mochten we dus die eerste applicatie van de IH inderdaad doen. 
+% En dan komt alles goed
+    \item We assume the last rule applied was \letns. This means
+    $$\AxiomC{$\ns{S}{s[x\mapsto \perp]}{s'}$}
+\UnaryInfC{$\ns{\letm{x}{S}}{s}{s'[x \mapsto s(x)]}$}
+\DisplayProof$$
+    If we now look at $\sos{\letm{x}{S}}{L}{s}$ for some list $L$, we see that we can apply \letsos ~to get 
+    $$\sos{\letm{x}{S}}{L}{s} \Rightarrow \sos{S}{(x,s(x))::L}{s[x\mapsto \perp]}$$
+    We can now apply the IH to $\sos{S}{(x,s(x))::L}{s[x\mapsto \perp]}$, as we have $\ns{S}{s[x\mapsto \perp]}{s'}$. This gives us
+    $$\sos{S}{(x,s(x))::L}{s[x\mapsto \perp]} \Rightarrow ^{*} \sos{\sk}{(x,s(x))::L}{s'}$$
+    Then per \loadsos ~and \setsos ~ we have
+    $$\sos{\sk}{(x,s(x))::L}{s'} \Rightarrow \sos{(x,s(x))}{L}{s'} \Rightarrow \sos{\sk}{L}{s'[x \mapsto s(x)]}$$
+    In total, this gives us
+    $$\sos{\letm{x}{S}}{L}{s} \Rightarrow ^{*} \sos{\sk}{L}{s'[x \mapsto s(x)]} $$
+    which was to be proven.
+    
+    For the second part of the lemma, we follow a reasoning similar to the previous case. 
+    Assume $\cc{\sk}{L}{r'[x\mapsto r(x)} \to ^{*} \tr$ $( * )$ for some list $L$ in the above derivation. We are interested in the derivation of $\cc{\letm{x}{S}}{L}{r}$. We can immediately move a step to get
+    $$\cc{\letm{x}{S}}{L}{r} \to \cc{S}{(x,r(x))::L}{r[x\mapsto \perp]}$$
+    It seems sensible to want to apply the IH (on $\ns{S}{s[x\mapsto \perp]}{s'}$). The IH in this case states that if $\cc{\sk}{(x,r(x))::L}{r'} \to^{*} \tr$, then $\cc{S}{(x,r(x))::L}{r[x\mapsto \perp]} \to^{*} \tr$. Therefore, we are interested in $\cc{\sk}{(x,r(x))::L}{r'}$. By the derivation rules we have
+    $$\cc{\sk}{(x,r(x))::L}{r'} \to \cc{(x,r(x))}{L}{r'} \to \cc{\sk}{L}{r'[x \mapsto r(x)]}$$
+    Of this last one, we know it derives to \tr, by $( * )$. Therefore, we know $\cc{\sk}{(x,r(x))::L}{r'} \to^{*} \tr$, and we can apply the IH as mentioned above. Therefore, we know $\cc{S}{(x,r(x))::L}{r[x\mapsto \perp]} \to^{*} \tr$. This gives us
+    $$\cc{\letm{x}{S}}{L}{r} \to \cc{S}{(x,r(x))::L}{r[x\mapsto \perp]} \to ^{*} \tr$$
+    which was to be proven.
+\end{itemize}
+The lemma now follows by induction. 
+\end{proof}
+
+To prove the other way around, we first need two helping lemmas. 
+
+\begin{lemma}
+\label{relationsosccstep}
+For all program instructions $S$, $S'$, lists $L$, $L'$, statements $s$, $s'$: if $\sos{S}{L}{s} \Rightarrow  \sos{S'}{L'}{s'}$ and $\cc{S}{L}{r} \to ^{*} \tr$, then $\cc{S}{L}{r} \to \cc{S'}{L'}{r'}$ for exactly one $r'$ related to $s'$. 
+\end{lemma}
+
+\begin{proof}
+We will check the different possibilities for the rules $\Rightarrow$. 
+\begin{itemize}[noitemsep]
+\item $\sos{\sk}{I::L}{s} \Rightarrow \sos{I}{L}{s}$. Assume $\cc{\sk}{I::L}{r} \to ^{*} \tr$ with $r$ related to $s$. We can only do $\cc{\sk}{I::L}{r} \to  \cc{I}{L}{r}$. Our $r$ is of the right form and the only such $r$, which proves this case. 
+
+\item $\sos{S_1; S_2}{L}{s} \Rightarrow \sos{S_1}{S_2::L}{s}$. Assume $\cc{S_1; S_2}{L}{r} \to ^{*} \tr$ with $r$ related to $s$. We can only do $\cc{S_1; S_2}{L}{r} \to  \cc{S_1}{S_2::L}{r}$. Our $r$ is of the right form and the only such $r$, which proves this case.
+
+\item $\sos{x = e}{L}{s} \Rightarrow \sos{\texttt{skip}}{L}{s[x \mapsto \letterfunc{A}{e}s][\mathcal{V}(e)\mapsto-]}$. Assume $\cc{x = e}{L}{r} \to ^{*} \tr$ with $r$ related to $s$. We can only do $\cc{x=e}{L}{r} \to \cc{\sk}{L}{r[x\mapsto \star][\mathcal{V}(e) \mapsto -]}$, because if the conditions of the rule were not met, the compile check could not have terminated in \tr, but would have terminated in \fa. Our $r$ is of the right form, because $\letterfunc{A}{e}s \in \mathbb{Z}$ and the only such $r$. This proves this case.
+
+\item The other cases are similar and therefore omitted. 
+\end{itemize}
+This proves our Lemma.
+\end{proof}
+
+
+\begin{lemma}
+\label{relationsoscc}
+For all program instructions $S$, $S'$, lists $L$, $L'$, states $s$, $s'$: if $\sos{S}{L}{s} \Rightarrow ^{*} \sos{S'}{L'}{s'}$ and $\cc{S}{L}{r} \to ^{*} \tr$, then $\cc{S}{L}{r} \to^{*} \cc{S'}{L'}{r'}$ for exactly one $r'$ related to $s'$. 
+\end{lemma}
+
+\begin{proof}
+By induction on the result from \ref{relationsosccstep}.
+\end{proof}
+
+\begin{lemma}
+\label{sosimpns}
+For all statements $S$ and lists $L$, for all states $s$, $s'$, for all reduced states $r$, with $r$ related to $s$: if $\sos{S}{L}{s} \Rightarrow ^{*} \sos{\sk}{L}{s'}$ and $\cc{S}{L}{r} \to^{*} \tr$, then $\ns{S}{s}{s'}$. Note that $S$ is a statement here, and not a program instruction. 
+\end{lemma}
+\begin{proof}
+We do some form of induction. We will look at the possible forms of $S$.
+\begin{itemize}[noitemsep]
+\item $\sk$ : assume $\sos{\sk}{L}{s} \Rightarrow ^{*} \sos{\sk}{L}{s'}$ and $\cc{\sk}{L}{r} \to^{*} \tr$. Then $s$ must be equal to $s'$. Then we have $\ns{\sk}{s}{s}$, which was to be proven. 
+\item $x = e$ : assume $\sos{x=e}{L}{s} \Rightarrow^{*} \sos{\sk}{L}{s'}$ and $\cc{x=e}{L}{r} \to^{*} \tr$. Then \asssos ~must have been applied, so 
+$$\sos{x=e}{L}{s} \Rightarrow \sos{\texttt{skip}}{L}{s[x \mapsto \letterfunc{A}{e}s][\mathcal{V}(e)\mapsto-]} \Rightarrow^{*} \sos{\sk}{L}{s'}$$
+This must mean $s' = s[x \mapsto \letterfunc{A}{e}s][\mathcal{V}(e)\mapsto-]$. We could make $\ns{x=e}{s}{s[x \mapsto \letterfunc{A}{e}s][\mathcal{V}(e)\mapsto-]}$ per \assns, if we can assure that $\letterfunc{A}{x}s = \perp$, $\letterfunc{A}{e}s \neq \perp$ and $\letterfunc{A}{e}s \neq -$. In $\cc{x=e}{L}{r} \to^{*} \tr$, we know that 
+$$\cc{x=e}{L}{r} \to \cc{\sk}{L}{r[x \mapsto \star][\mathcal{V}(e)\mapsto-]} \to^{*} \tr$$ 
+and we only could have applied that rule if $\textrm{if }r(x) = \perp \textrm{ and } \forall y \in \mathcal{V}(e), r(y) = \star$. If $r$ and $s$ related, this means that the conditions are fulfilled and we can apply \assns. 
+\item $S_1; S_2$ : assume $\sos{S_1; S_2}{L}{s} \Rightarrow^{*} \sos{\sk}{L}{s'}$ and $\cc{S_1; S_2}{L}{r} \to^{*} \tr$. Then per \ref{breakingdowncomp} we have 
+$$\sos{S_1; S_2}{L}{s} \Rightarrow \sos{S_1}{S_2::L}{s} \Rightarrow ^{*} \sos{\texttt{skip}}{S_2::L}{s''} \Rightarrow \sos{S_2}{L}{s''} \Rightarrow ^{*} \sos{\texttt{skip}}{L}{s'}$$
+Now if $\cc{S_1}{S_2::L}{r} \to ^{*} \tr$ we can apply the Induction Hypothesis (IH). 
+As we have $\cc{S_1; S_2}{L}{r} \to^{*} \tr$, we can make
+$$\cc{S_1; S_2}{L}{r} \to \cc{S_1}{S_2::L}{r} \to ^{*} \tr$$
+so we can indeed apply the IH. 
+This gives us $\ns{S_1}{s}{s''}$. 
+
+Now, if also $\cc{S_2}{L}{r''} \to ^{*} \tr$, we can again apply the IH to get $\ns{S_2}{s''}{s'}$. We know $\cc{S_1}{S_2::L}{r} \to ^{*} \tr$. The last step before \tr ~must be $\cc{\sk}{\nil}{r'''}$, as that is the only rule that leads to \tr. So we know the list needs to be emptied again. Therefore, the derivation needs to be something like the following: 
+$$\cc{S_1; S_2}{L}{r} \to \cc{S_1}{S_2::L}{r} \to^{*} \cc{\sk}{S_2::L}{r''''} \to \cc{S_2}{L}{r''''} \to^{*}$$ 
+$$\cc{\sk}{\nil}{r'''} \to  \tr$$
+Because of \ref{relationsoscc} we know that $r''''$ must be related to $s''$ and must be equal to $r''$. This means that we can indeed conclude that $\cc{S_2}{L}{r''} \to ^{*} \tr$ and we therefore have $\ns{S_2}{s''}{s'}$. 
+
+Now we can apply \compns ~to give us $\ns{S_1; S_2}{s}{s'}$, which was to be proven. 
+\item $\letm{x}{S}$ : This case is very similar to that of the composition, but with only one application of the Induction Hypothesis. Therefore, we leave out the details. 
+\end{itemize}
+\end{proof}
+
+\begin{theorem}
+For all statements $S$, $S'$, states $s$, $s'$, reduced states $r$: $\ns{S}{s}{s'}$ if and only if for some $L$ $\sos{S}{L}{s} \Rightarrow ^{*} \sos{\sk}{L}{s'}$ and $\cc{S}{L}{r} \to^{*} \tr$ (with $r$ related to $s$).
+\end{theorem}
+
+\begin{proof}
+This follows from the proofs for Lemmas \ref{nsimpsos} and \ref{sosimpns}.
+\end{proof}
+
+\subsection{Safety}
+We now move on to the more interesting proofs where we will actually prove safety properties. Here, we apply an idea originally introduced by \cite{wright1994syntactic} in a slightly different context. The original idea is that when you have a type system, you prove \emph{preservation} and \emph{progress}, and that this combines to safety. However, in our case, we do not have a type system, but we do have our compile time checker. The following pages detail these proofs.
+
+\subsubsection*{Preservation}
+The first thing we will prove is \emph{preservation}, where we will show that if the compile time checker says a program is okay, and you take a step in the semantics, the checker will say it is still okay. In general this means that the result of the checker does not depend on where you are in the program and does not change throughout running the program. 
+
+\begin{theorem}
+\label{preservation}
+For all program instructions $S$, $S'$, lists $L$, $L'$, states $s$, $s'$, reduced states $r$: if $\cc{S}{L}{r} \to ^* \texttt{true}$ and $\sos{S}{L}{s} \Rightarrow \sos{S'}{L'}{s'}$ with $r$ related to $s$, then there is an $r'$ that is related to $s'$ and we have $\cc{S'}{L'}{r'} \to ^* \texttt{true}$.
+\end{theorem}
+
+\begin{proof}
+We assume $\cc{S}{L}{r} \to ^* \texttt{true}$. We look at the different possible rules $\Rightarrow$. 
+\begin{itemize}[noitemsep]
+    \item $\sos{\texttt{skip}}{I::L}{s} \Rightarrow \sos{I}{L}{s}$. We assume $\cc{\texttt{skip}}{I::L}{r} \to ^* \texttt{true}$. We try to determine which derivation steps could have let to \texttt{true}. The only possible step is $\cc{\texttt{skip}}{I::L}{r}\to \cc{I}{L}{r}$. Then we have our $r' = r$, and obviously we also have $\cc{I}{L}{r} \to^* \texttt{true}$.
+    
+    \item $\sos{x = e}{L}{s} \Rightarrow \sos{\texttt{skip}}{L}{s[x \mapsto \letterfunc{A}{e}s][\mathcal{V}(e)\mapsto-]}$. We assume $\cc{x = e}{L}{r} \to ^* \texttt{true}$. We try to determine which derivation steps could have led to \texttt{true}. The only possible step is $\cc{x=e}{L}{r} \to \cc{\texttt{skip}}{L}{r[x\mapsto \star][\mathcal{V}(e) \mapsto -]}$. Then we have our $r' = r[x\mapsto \star][\mathcal{V}(e) \mapsto -]$ and obviously we also have $\cc{\texttt{skip}}{L}{r[x\mapsto \star][\mathcal{V}(e) \mapsto -]} \to^* \texttt{true}$ then.
+    
+    \item $\sos{S_1; S_2}{L}{s} \Rightarrow \sos{S_1}{S_2::L}{s}$. We assume $\cc{S_1; S_2}{L}{r} \to ^* \texttt{true}$. We try to determine which derivation steps could have led to \texttt{true}. The only possible step is $\cc{S_1; S_2}{L}{r} \to \cc{S_1}{S_2::L}{r}$. Then we have our $r' = r$ and obviously we also have $\cc{S_1}{S_2::L}{r} \to^* \texttt{true}$.
+    \item The other cases are similar and therefore omitted.
+\end{itemize}
+This proves our theorem.
+\end{proof}
+
+\subsubsection{Progress}
+The second property we are interested in is called \emph{progress}. This means that if the program passes through the compile time checker, we can always do a step in the semantics (or we are already in the \sk ~state). 
+
+\begin{theorem}
+\label{progress}
+For all program instructions $S$, reduced states $r$, lists $L$: if $\cc{S}{L}{r} \to ^* \texttt{true}$, then $S = \texttt{skip}$ and $L = \texttt{Nil}$ or we have, for all $s$ related to $r$, $\sos{S}{L}{s} \Rightarrow \sos{S'}{L'}{s'}$ for some statement $S'$, list $L'$ and state $s'$.
+\end{theorem}
+
+\begin{proof}
+We assume $\cc{S}{L}{r} \to ^* \texttt{true}$. Since it must derive to \tr, we know that derivation steps must be taken. We walk through all the possible derivation steps. 
+\begin{itemize}[noitemsep]
+    \item $\cc{\sk}{\nil}{r} \to ^* \texttt{true}$. This means $S = \sk$ and $L = \texttt{Nil}$ and that means we are done.
+    \item $\cc{\sk} {P::L}{ r} \to \tr$. This means we want to say something about $\sos{\texttt{skip}}{P::L}{s}$ for any $s$ related to $r$. We can apply the rule \loadsos. This gives us $\sos{\texttt{skip}}{P::L}{s} \Rightarrow \sos{P}{L}{s}$, which proves this case. 
+    \item $\cc{x=e}{L}{r} \to ^{*} \tr$. This means we want to say something about $\sos{x=e}{L}{s}$ for any $s$ related to $r$. We can apply \asssos to get $\sos{x=e}{L}{s} \Rightarrow \sos{\texttt{skip}}{L}{s[x \mapsto \letterfunc{A}{e}s][\mathcal{V}(e)\mapsto-]}$, which proves this case. 
+     \item The other cases are similar and therefore omitted. 
+\end{itemize}
+This proves the theorem.
+\end{proof}
+
+ 
+%\begin{theorem}
+%If $\mathcal{C}( S, L, r) = r'$ for some $r' \in \textbf{RState}$, then 
+%\end{proposition}
+
+%\begin{proof}
+%Assume $\langle S_1, L, s \rangle \Rightarrow ^{n} \langle \texttt{skip}, L, s \rangle$ and look at $\langle S_1;S_2, L, s \rangle$. Then $\langle S_1;S_2, L, s \rangle$ $\Rightarrow _{[\textrm{comp}$_{\textrm{os}}$]} $\langle S_1, S_2::L, s \rangle$
+%\end{proof}
+
+%pdflatex -synctex=1 -interaction=nonstopmode --shell-escape main.tex
+

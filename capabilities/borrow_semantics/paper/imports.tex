@@ -1,0 +1,94 @@
+\usepackage[utf8]{inputenc}
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+%\usepackage[a4paper]{geometry}
+\usepackage{graphicx}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage[cache=false]{minted}     % For fancy code highlighting
+\usepackage[shortlabels]{enumitem}
+\usepackage{mathtools} %To make align* work
+\usepackage{amssymb} %To denote the set of integers with correct type of letter
+\usepackage{amsthm}
+\usepackage{cite}
+\usepackage{hyperref}
+\usepackage{natbib}
+
+
+%Numbering for theorems, definitions, corollaries, etc.
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{corollary}{Corollary}[theorem]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+
+\theoremstyle{definition}
+\newtheorem{definition}{Definition}[section]
+\newtheorem{infdefinition}{Informal definition}[section]
+
+\renewcommand\qedsymbol{$\diamondsuit$}
+
+%\usepackage{rutitlepage/rutitlepage.dtx}
+
+\usepackage{stmaryrd} %Double brackets
+
+\usepackage{bussproofs}
+
+\newenvironment{scprooftree}[1]%
+  {\gdef\scalefactor{#1}\begin{center}\proofSkipAmount \leavevmode}%
+  {\scalebox{\scalefactor}{\DisplayProof}\proofSkipAmount \end{center} }
+
+
+%For defintion of fancy A
+\newcommand{\twopartdef}[3]
+{
+	\left\{
+		\begin{array}{ll}
+			#1 & \mbox{if } #2 \\
+			#3 & \mbox{otherwise } 
+		\end{array}
+	\right.
+}
+
+
+\newcommand{\letterfunc}[2]{\mathcal{#1} \llbracket #2 \rrbracket}
+
+\newcommand{\sk}[0]{\texttt{skip}}
+\newcommand{\nil}[0]{\texttt{Nil}}
+\newcommand{\tr}[0]{\texttt{true}}
+\newcommand{\fa}[0]{\texttt{false}}
+\newcommand{\mut}[0]{\texttt{mut}}
+
+\newcommand{\asssos}[0]{[ass$_{\textrm{sos}}$]}
+\newcommand{\letsos}[0]{[let$_{\textrm{sos}}$]}
+\newcommand{\compsos}[0]{[comp$_{\textrm{sos}}$]}
+\newcommand{\loadsos}[0]{[load$_{\textrm{sos}}$]}
+\newcommand{\setsos}[0]{[set$_{\textrm{sos}}$]}
+\newcommand{\assns}[0]{[ass$_{\textrm{ns}}$]}
+\newcommand{\letns}[0]{[let$_{\textrm{ns}}$]}
+\newcommand{\compns}[0]{[comp$_{\textrm{ns}}$]}
+\newcommand{\skipns}[0]{[skip$_{\textrm{ns}}$]}
+
+\newcommand{\asssosb}[0]{[ass$_{\textrm{sosb}}$]}
+\newcommand{\letsosb}[0]{[let$_{\textrm{sosb}}$]}
+\newcommand{\letmutsosb}[0]{[letmut$_{\textrm{sosb}}$]}
+\newcommand{\compsosb}[0]{[comp$_{\textrm{sosb}}$]}
+\newcommand{\loadsosb}[0]{[load$_{\textrm{sosb}}$]}
+\newcommand{\setsosb}[0]{[set$_{\textrm{sosb}}$]}
+
+\newcommand{\ns}[3]{\langle #1, #2 \rangle \to #3}
+
+\newcommand{\sos}[3]{\langle #1, #2, #3 \rangle}
+
+\newcommand{\cc}[3]{[ #1, #2, #3 ]}
+
+\newcommand{\letm}[2]{\texttt{let }#1 : \tau \texttt{ in } #2}
+
+\newcommand{\sosb}[4]{\langle #1, #2, #3, \mathcal{#4} \rangle}
+
+\newcommand{\letmut}[2]{\texttt{let mut }#1 : \tau \texttt{ in } #2}
+
+\newcommand{\ccb}[4]{[ #1, #2, #3, \mathcal{#4} ]}
+
+\newcommand{\whi}[1]{\texttt{while } b~ \{ #1 \}}
+
+\newcommand{\ccwhile}[5]{[ #1, #2, #3, \mathcal{#4}, #5 ]}

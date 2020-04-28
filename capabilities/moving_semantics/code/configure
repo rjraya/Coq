@@ -1,0 +1,1 @@
+coq_makefile *.v -Q . Capabilities -o Makefile TIMED = true TIMEFMT = "\"\$*: %es\""

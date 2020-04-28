@@ -1,0 +1,477 @@
+DIGEST d9a20782d7154e9c201997a380484c0e
+FCapabilities.preliminaries
+R202:211 Coq.ZArith.Int <> <> lib
+R238:248 Coq.omega.Omega <> <> lib
+R275:284 Coq.Lists.List <> <> lib
+R311:324 Coq.Strings.String <> <> lib
+R351:380 Coq.Logic.FunctionalExtensionality <> <> lib
+R398:423 Capabilities.CustomTactics <> <> lib
+def 509:513 <> vname
+R518:523 Coq.Strings.String <> string ind
+ind 537:540 <> zext
+constr 547:558 <> non_declared
+constr 562:573 <> not_assigned
+constr 577:579 <> val
+R559:559 Capabilities.preliminaries <> zext ind
+R574:574 Capabilities.preliminaries <> zext ind
+R584:587 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R588:591 Capabilities.preliminaries <> zext ind
+R583:583 Coq.Numbers.BinNums <> Z ind
+R647:658 Capabilities.preliminaries <> non_declared constr
+not 637:637 <> ::borrow_scope:'-__u'
+R694:705 Capabilities.preliminaries <> not_assigned constr
+not 685:685 <> ::borrow_scope:'⊥'
+ind 735:738 <> type
+constr 745:747 <> Int
+constr 758:766 <> BorrowedT
+R751:754 Capabilities.preliminaries <> type ind
+R774:777 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R778:781 Capabilities.preliminaries <> type ind
+R770:773 Capabilities.preliminaries <> type ind
+ind 796:799 <> expr
+constr 806:808 <> var
+constr 828:834 <> integer
+constr 850:852 <> add
+constr 879:889 <> borrowedVar
+constr 909:922 <> mutBorrowedVar
+R817:820 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R821:824 Capabilities.preliminaries <> expr ind
+R812:816 Capabilities.preliminaries <> vname def
+R839:842 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R843:846 Capabilities.preliminaries <> expr ind
+R838:838 Coq.Numbers.BinNums <> Z ind
+R860:863 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R868:871 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R872:875 Capabilities.preliminaries <> expr ind
+R864:867 Capabilities.preliminaries <> expr ind
+R856:859 Capabilities.preliminaries <> expr ind
+R898:901 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R902:905 Capabilities.preliminaries <> expr ind
+R893:897 Capabilities.preliminaries <> vname def
+R931:934 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R935:938 Capabilities.preliminaries <> expr ind
+R926:930 Capabilities.preliminaries <> vname def
+ind 952:954 <> com
+constr 961:964 <> Skip
+constr 974:976 <> Seq
+constr 1000:1003 <> Bind
+constr 1069:1074 <> Assign
+constr 1101:1107 <> MutBind
+R968:970 Capabilities.preliminaries <> com ind
+R983:986 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R990:993 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R994:996 Capabilities.preliminaries <> com ind
+R987:989 Capabilities.preliminaries <> com ind
+R980:982 Capabilities.preliminaries <> com ind
+R1012:1015 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R1020:1023 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R1027:1030 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R1031:1033 Capabilities.preliminaries <> com ind
+R1024:1026 Capabilities.preliminaries <> com ind
+R1016:1019 Capabilities.preliminaries <> type ind
+R1007:1011 Capabilities.preliminaries <> vname def
+R1083:1086 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R1091:1094 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R1095:1097 Capabilities.preliminaries <> com ind
+R1087:1090 Capabilities.preliminaries <> expr ind
+R1078:1082 Capabilities.preliminaries <> vname def
+R1116:1119 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R1124:1127 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R1131:1134 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R1135:1137 Capabilities.preliminaries <> com ind
+R1128:1130 Capabilities.preliminaries <> com ind
+R1120:1123 Capabilities.preliminaries <> type ind
+R1111:1115 Capabilities.preliminaries <> vname def
+R1201:1203 Capabilities.preliminaries <> Seq constr
+not 1184:1184 <> ::borrow_scope:x_';;'_x
+R1520:1523 Capabilities.preliminaries <> Bind constr
+not 1491:1491 <> ::borrow_scope:'LET'_x_','_x_'IN'_x
+R1608:1613 Capabilities.preliminaries <> Assign constr
+not 1591:1591 <> ::borrow_scope:x_';='_x
+R1689:1695 Capabilities.preliminaries <> MutBind constr
+not 1659:1659 <> ::borrow_scope:'LETM'_x_','_x_'IN'_x
+def 1766:1770 <> prog0
+R1774:1776 Capabilities.preliminaries <> com ind
+R1781:1784 Capabilities.preliminaries <> Skip constr
+def 1833:1833 <> X
+R1837:1842 Coq.Strings.String <> string ind
+def 1863:1863 <> Y
+R1867:1872 Coq.Strings.String <> string ind
+def 1893:1893 <> Z
+R1897:1902 Coq.Strings.String <> string ind
+def 1924:1928 <> prog1
+R1932:1934 Capabilities.preliminaries <> com ind
+R1939:1942 Capabilities.preliminaries <> ::borrow_scope:'LET'_x_','_x_'IN'_x not
+R1944:1946 Capabilities.preliminaries <> ::borrow_scope:'LET'_x_','_x_'IN'_x not
+R1950:1953 Capabilities.preliminaries <> ::borrow_scope:'LET'_x_','_x_'IN'_x not
+R1943:1943 Capabilities.preliminaries <> X def
+R1947:1949 Capabilities.preliminaries <> Int constr
+R1954:1957 Capabilities.preliminaries <> Skip constr
+def 1972:1976 <> prog2
+R1980:1982 Capabilities.preliminaries <> com ind
+R1990:1993 Capabilities.preliminaries <> ::borrow_scope:'LET'_x_','_x_'IN'_x not
+R1995:1997 Capabilities.preliminaries <> ::borrow_scope:'LET'_x_','_x_'IN'_x not
+R2001:2005 Capabilities.preliminaries <> ::borrow_scope:'LET'_x_','_x_'IN'_x not
+R2095:2095 Capabilities.preliminaries <> ::borrow_scope:'LET'_x_','_x_'IN'_x not
+R1994:1994 Capabilities.preliminaries <> X def
+R1998:2000 Capabilities.preliminaries <> Int constr
+R2022:2028 Capabilities.preliminaries <> ::borrow_scope:x_';;'_x not
+R2007:2011 Capabilities.preliminaries <> ::borrow_scope:x_';='_x not
+R2021:2021 Capabilities.preliminaries <> ::borrow_scope:x_';='_x not
+R2006:2006 Capabilities.preliminaries <> X def
+R2012:2018 Capabilities.preliminaries <> integer constr
+R2029:2032 Capabilities.preliminaries <> ::borrow_scope:'LET'_x_','_x_'IN'_x not
+R2034:2036 Capabilities.preliminaries <> ::borrow_scope:'LET'_x_','_x_'IN'_x not
+R2040:2044 Capabilities.preliminaries <> ::borrow_scope:'LET'_x_','_x_'IN'_x not
+R2094:2094 Capabilities.preliminaries <> ::borrow_scope:'LET'_x_','_x_'IN'_x not
+R2033:2033 Capabilities.preliminaries <> Y def
+R2037:2039 Capabilities.preliminaries <> Int constr
+R2057:2064 Capabilities.preliminaries <> ::borrow_scope:x_';;'_x not
+R2046:2050 Capabilities.preliminaries <> ::borrow_scope:x_';='_x not
+R2056:2056 Capabilities.preliminaries <> ::borrow_scope:x_';='_x not
+R2045:2045 Capabilities.preliminaries <> Y def
+R2051:2053 Capabilities.preliminaries <> var constr
+R2055:2055 Capabilities.preliminaries <> X def
+R2065:2068 Capabilities.preliminaries <> ::borrow_scope:'LET'_x_','_x_'IN'_x not
+R2070:2072 Capabilities.preliminaries <> ::borrow_scope:'LET'_x_','_x_'IN'_x not
+R2076:2080 Capabilities.preliminaries <> ::borrow_scope:'LET'_x_','_x_'IN'_x not
+R2093:2093 Capabilities.preliminaries <> ::borrow_scope:'LET'_x_','_x_'IN'_x not
+R2069:2069 Capabilities.preliminaries <> Z def
+R2073:2075 Capabilities.preliminaries <> Int constr
+R2082:2086 Capabilities.preliminaries <> ::borrow_scope:x_';='_x not
+R2092:2092 Capabilities.preliminaries <> ::borrow_scope:x_';='_x not
+R2081:2081 Capabilities.preliminaries <> Z def
+R2087:2089 Capabilities.preliminaries <> var constr
+R2091:2091 Capabilities.preliminaries <> Y def
+def 2110:2114 <> prog3
+R2118:2120 Capabilities.preliminaries <> com ind
+R2125:2129 Capabilities.preliminaries <> ::borrow_scope:'LETM'_x_','_x_'IN'_x not
+R2131:2133 Capabilities.preliminaries <> ::borrow_scope:'LETM'_x_','_x_'IN'_x not
+R2137:2140 Capabilities.preliminaries <> ::borrow_scope:'LETM'_x_','_x_'IN'_x not
+R2130:2130 Capabilities.preliminaries <> X def
+R2134:2136 Capabilities.preliminaries <> Int constr
+R2141:2144 Capabilities.preliminaries <> Skip constr
+def 2159:2163 <> state
+R2173:2176 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R2177:2180 Capabilities.preliminaries <> zext ind
+R2168:2172 Capabilities.preliminaries <> vname def
+def 2195:2203 <> abs_state
+R2223:2226 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R2227:2227 Capabilities.preliminaries <> A var
+R2217:2222 Coq.Strings.String <> string ind
+def 2242:2247 <> update
+R2275:2283 Capabilities.preliminaries <> abs_state def
+R2285:2293 Capabilities.preliminaries <> abs_value var
+R2301:2306 Coq.Strings.String <> string ind
+R2314:2322 Capabilities.preliminaries <> abs_value var
+R2343:2352 Coq.Strings.String <> eqb def
+R2356:2357 Capabilities.preliminaries <> x' var
+R2354:2354 Capabilities.preliminaries <> x var
+R2371:2371 Capabilities.preliminaries <> s var
+R2373:2374 Capabilities.preliminaries <> x' var
+R2364:2364 Capabilities.preliminaries <> v var
+prf 2384:2392 <> update_eq
+R2407:2411 Capabilities.preliminaries <> state def
+R2422:2427 Coq.Strings.String <> string ind
+R2434:2437 Capabilities.preliminaries <> zext ind
+R2452:2455 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R2472:2474 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R2456:2461 Capabilities.preliminaries <> update def
+R2470:2471 Capabilities.preliminaries <> x2 var
+R2468:2468 Capabilities.preliminaries <> v var
+R2465:2466 Capabilities.preliminaries <> x1 var
+R2463:2463 Capabilities.preliminaries <> s var
+R2475:2475 Capabilities.preliminaries <> v var
+R2447:2449 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R2445:2446 Capabilities.preliminaries <> x1 var
+R2450:2451 Capabilities.preliminaries <> x2 var
+R2492:2497 Capabilities.preliminaries <> update def
+prf 2555:2565 <> update_refl
+R2580:2584 Capabilities.preliminaries <> state def
+R2591:2596 Coq.Strings.String <> string ind
+R2603:2606 Capabilities.preliminaries <> zext ind
+R2628:2630 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R2614:2619 Capabilities.preliminaries <> update def
+R2627:2627 Capabilities.preliminaries <> x var
+R2625:2625 Capabilities.preliminaries <> v var
+R2623:2623 Capabilities.preliminaries <> x var
+R2621:2621 Capabilities.preliminaries <> s var
+R2631:2631 Capabilities.preliminaries <> v var
+R2666:2674 Capabilities.preliminaries <> update_eq thm
+R2666:2674 Capabilities.preliminaries <> update_eq thm
+R2666:2674 Capabilities.preliminaries <> update_eq thm
+R2666:2674 Capabilities.preliminaries <> update_eq thm
+prf 2689:2698 <> update_neq
+R2713:2717 Capabilities.preliminaries <> state def
+R2728:2733 Coq.Strings.String <> string ind
+R2740:2743 Capabilities.preliminaries <> zext ind
+R2759:2762 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R2779:2781 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R2763:2768 Capabilities.preliminaries <> update def
+R2777:2778 Capabilities.preliminaries <> x2 var
+R2775:2775 Capabilities.preliminaries <> v var
+R2772:2773 Capabilities.preliminaries <> x1 var
+R2770:2770 Capabilities.preliminaries <> s var
+R2782:2782 Capabilities.preliminaries <> s var
+R2784:2785 Capabilities.preliminaries <> x2 var
+R2753:2756 Coq.Init.Logic <> ::type_scope:x_'<>'_x not
+R2751:2752 Capabilities.preliminaries <> x1 var
+R2757:2758 Capabilities.preliminaries <> x2 var
+R2802:2807 Capabilities.preliminaries <> update def
+prf 2865:2874 <> update_com
+R2895:2900 Coq.Strings.String <> string ind
+R2907:2911 Capabilities.preliminaries <> state def
+R2918:2921 Capabilities.preliminaries <> zext ind
+R2956:2958 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R2929:2934 Capabilities.preliminaries <> update def
+R2955:2955 Capabilities.preliminaries <> v var
+R2952:2953 Capabilities.preliminaries <> x2 var
+R2937:2942 Capabilities.preliminaries <> update def
+R2949:2949 Capabilities.preliminaries <> v var
+R2946:2947 Capabilities.preliminaries <> x1 var
+R2944:2944 Capabilities.preliminaries <> s var
+R2959:2964 Capabilities.preliminaries <> update def
+R2985:2985 Capabilities.preliminaries <> v var
+R2982:2983 Capabilities.preliminaries <> x1 var
+R2967:2972 Capabilities.preliminaries <> update def
+R2979:2979 Capabilities.preliminaries <> v var
+R2976:2977 Capabilities.preliminaries <> x2 var
+R2974:2974 Capabilities.preliminaries <> s var
+R3004:3009 Capabilities.preliminaries <> update def
+R3061:3085 Coq.Logic.FunctionalExtensionality <> functional_extensionality thm
+R3061:3085 Coq.Logic.FunctionalExtensionality <> functional_extensionality thm
+def 3105:3115 <> update_list
+R3143:3151 Capabilities.preliminaries <> abs_state def
+R3153:3161 Capabilities.preliminaries <> abs_value var
+R3169:3172 Coq.Init.Datatypes <> list ind
+R3174:3179 Coq.Strings.String <> string ind
+R3189:3197 Coq.Lists.List <> fold_left def
+R3275:3275 Capabilities.preliminaries <> s var
+R3273:3273 Capabilities.preliminaries <> l var
+R3209:3217 Capabilities.preliminaries <> abs_state def
+R3219:3227 Capabilities.preliminaries <> abs_value var
+R3234:3239 Coq.Strings.String <> string ind
+R3258:3263 Capabilities.preliminaries <> update def
+R3270:3270 Capabilities.preliminaries <> v var
+R3268:3268 Capabilities.preliminaries <> x var
+R3265:3266 Capabilities.preliminaries <> s' var
+prf 3285:3298 <> update_to_list
+R3315:3320 Coq.Strings.String <> string ind
+R3327:3330 Coq.Init.Datatypes <> list ind
+R3332:3336 Capabilities.preliminaries <> vname def
+R3343:3347 Capabilities.preliminaries <> state def
+R3354:3357 Capabilities.preliminaries <> zext ind
+R3395:3397 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R3365:3375 Capabilities.preliminaries <> update_list def
+R3394:3394 Capabilities.preliminaries <> v var
+R3392:3392 Capabilities.preliminaries <> l var
+R3378:3383 Capabilities.preliminaries <> update def
+R3389:3389 Capabilities.preliminaries <> v var
+R3387:3387 Capabilities.preliminaries <> x var
+R3385:3385 Capabilities.preliminaries <> s var
+R3398:3403 Capabilities.preliminaries <> update def
+R3427:3427 Capabilities.preliminaries <> v var
+R3425:3425 Capabilities.preliminaries <> x var
+R3406:3416 Capabilities.preliminaries <> update_list def
+R3422:3422 Capabilities.preliminaries <> v var
+R3420:3420 Capabilities.preliminaries <> l var
+R3418:3418 Capabilities.preliminaries <> s var
+R3482:3491 Capabilities.preliminaries <> update_com thm
+R3482:3491 Capabilities.preliminaries <> update_com thm
+R3482:3491 Capabilities.preliminaries <> update_com thm
+prf 3526:3540 <> update_list_neq
+R3557:3560 Coq.Init.Datatypes <> list ind
+R3562:3567 Coq.Strings.String <> string ind
+R3574:3578 Capabilities.preliminaries <> state def
+R3585:3590 Coq.Strings.String <> string ind
+R3597:3600 Capabilities.preliminaries <> zext ind
+R3620:3623 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R3643:3645 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R3624:3634 Capabilities.preliminaries <> update_list def
+R3642:3642 Capabilities.preliminaries <> x var
+R3640:3640 Capabilities.preliminaries <> v var
+R3638:3638 Capabilities.preliminaries <> l var
+R3636:3636 Capabilities.preliminaries <> s var
+R3646:3646 Capabilities.preliminaries <> s var
+R3648:3648 Capabilities.preliminaries <> x var
+R3608:3610 Coq.Init.Logic <> not def
+R3613:3614 Coq.Lists.List <> In def
+R3618:3618 Capabilities.preliminaries <> l var
+R3616:3616 Capabilities.preliminaries <> x var
+R3714:3723 Capabilities.preliminaries <> update_neq thm
+R3714:3723 Capabilities.preliminaries <> update_neq thm
+R3714:3723 Capabilities.preliminaries <> update_neq thm
+R3714:3723 Capabilities.preliminaries <> update_neq thm
+prf 3739:3752 <> update_list_eq
+R3769:3772 Coq.Init.Datatypes <> list ind
+R3774:3779 Coq.Strings.String <> string ind
+R3786:3790 Capabilities.preliminaries <> state def
+R3797:3802 Coq.Strings.String <> string ind
+R3809:3812 Capabilities.preliminaries <> zext ind
+R3826:3829 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R3849:3851 Coq.Init.Logic <> ::type_scope:x_'='_x not
+R3830:3840 Capabilities.preliminaries <> update_list def
+R3848:3848 Capabilities.preliminaries <> x var
+R3846:3846 Capabilities.preliminaries <> v var
+R3844:3844 Capabilities.preliminaries <> l var
+R3842:3842 Capabilities.preliminaries <> s var
+R3852:3852 Capabilities.preliminaries <> v var
+R3820:3821 Coq.Lists.List <> In def
+R3825:3825 Capabilities.preliminaries <> l var
+R3823:3823 Capabilities.preliminaries <> x var
+R3957:3971 Coq.Strings.String <> eqb_refl thm
+R3930:3935 Capabilities.preliminaries <> update def
+R3905:3918 Capabilities.preliminaries <> update_to_list thm
+R3905:3918 Capabilities.preliminaries <> update_to_list thm
+R3905:3918 Capabilities.preliminaries <> update_to_list thm
+R3905:3918 Capabilities.preliminaries <> update_to_list thm
+R3905:3918 Capabilities.preliminaries <> update_to_list thm
+R3957:3971 Coq.Strings.String <> eqb_refl thm
+R3957:3971 Coq.Strings.String <> eqb_refl thm
+def 4069:4072 <> vars
+R4078:4081 Capabilities.preliminaries <> expr ind
+R4085:4088 Coq.Init.Datatypes <> list ind
+R4090:4095 Coq.Strings.String <> string ind
+R4108:4108 Capabilities.preliminaries <> e var
+R4119:4121 Capabilities.preliminaries <> var constr
+R4129:4129 Coq.Lists.List ListNotations ::list_scope:'['_x_']' not
+R4132:4132 Coq.Lists.List ListNotations ::list_scope:'['_x_']' not
+R4138:4144 Capabilities.preliminaries <> integer constr
+R4151:4152 Coq.Lists.List ListNotations ::list_scope:'['_']' not
+R4158:4160 Capabilities.preliminaries <> add constr
+R4186:4189 Coq.Init.Datatypes <> ::list_scope:x_'++'_x not
+R4175:4178 Capabilities.preliminaries <> vars def
+R4190:4193 Capabilities.preliminaries <> vars def
+R4205:4215 Capabilities.preliminaries <> borrowedVar constr
+R4222:4223 Coq.Lists.List ListNotations ::list_scope:'['_']' not
+R4229:4242 Capabilities.preliminaries <> mutBorrowedVar constr
+R4249:4250 Coq.Lists.List ListNotations ::list_scope:'['_']' not
+def 4348:4349 <> mu
+R4360:4364 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R4399:4399 Coq.Init.Logic <> ::type_scope:x_'->'_x not
+R4376:4378 Coq.Init.Datatypes <> ::type_scope:x_'*'_x not
+R4369:4371 Coq.Init.Datatypes <> ::type_scope:x_'*'_x not
+R4365:4368 Coq.Init.Datatypes <> bool ind
+R4372:4375 Coq.Init.Datatypes <> bool ind
+R4379:4392 Coq.Init.Datatypes <> list ind
+R4394:4398 Capabilities.preliminaries <> vname def
+R4354:4359 Coq.Strings.String <> string ind
+def 4414:4421 <> mu_union
+R4442:4444 Coq.Init.Datatypes <> ::type_scope:x_'*'_x not
+R4435:4437 Coq.Init.Datatypes <> ::type_scope:x_'*'_x not
+R4431:4434 Coq.Init.Datatypes <> bool ind
+R4438:4441 Coq.Init.Datatypes <> bool ind
+R4445:4458 Coq.Init.Datatypes <> list ind
+R4460:4464 Capabilities.preliminaries <> vname def
+R4479:4480 Capabilities.preliminaries <> m1 var
+R4491:4491 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R4494:4494 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R4498:4498 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R4502:4502 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R4517:4518 Capabilities.preliminaries <> m2 var
+R4531:4531 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R4534:4534 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R4538:4538 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R4542:4542 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R4553:4553 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R4563:4564 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R4576:4577 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R4588:4588 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R4554:4556 Coq.Init.Datatypes <> orb def
+R4565:4567 Coq.Init.Datatypes <> orb def
+R4581:4584 Coq.Init.Datatypes <> ::list_scope:x_'++'_x not
+def 4617:4625 <> update_mu
+R4635:4636 Capabilities.preliminaries <> mu def
+R4644:4647 Coq.Init.Datatypes <> list ind
+R4649:4654 Coq.Strings.String <> string ind
+R4664:4672 Coq.Lists.List <> fold_left def
+R4737:4737 Capabilities.preliminaries <> m var
+R4735:4735 Capabilities.preliminaries <> l var
+R4684:4685 Capabilities.preliminaries <> mu def
+R4692:4697 Coq.Strings.String <> string ind
+R4716:4721 Capabilities.preliminaries <> update def
+R4729:4729 Capabilities.preliminaries <> f var
+R4731:4731 Capabilities.preliminaries <> x var
+R4726:4726 Capabilities.preliminaries <> x var
+R4723:4724 Capabilities.preliminaries <> m' var
+def 4843:4850 <> borrowed
+R4856:4859 Capabilities.preliminaries <> expr ind
+R4866:4867 Capabilities.preliminaries <> mu def
+R4871:4874 Coq.Init.Datatypes <> list ind
+R4876:4881 Coq.Strings.String <> string ind
+R4894:4894 Capabilities.preliminaries <> e var
+R4905:4907 Capabilities.preliminaries <> var constr
+R4915:4916 Coq.Lists.List ListNotations ::list_scope:'['_']' not
+R4922:4928 Capabilities.preliminaries <> integer constr
+R4935:4936 Coq.Lists.List ListNotations ::list_scope:'['_']' not
+R4942:4944 Capabilities.preliminaries <> add constr
+R4959:4960 Coq.Lists.List ListNotations ::list_scope:'['_']' not
+R4966:4976 Capabilities.preliminaries <> borrowedVar constr
+R4993:4993 Capabilities.preliminaries <> m var
+R5009:5009 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R5011:5012 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R5017:5018 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R5020:5020 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R5013:5016 Coq.Init.Datatypes <> true constr
+R5025:5025 Coq.Lists.List ListNotations ::list_scope:'['_x_']' not
+R5027:5027 Coq.Lists.List ListNotations ::list_scope:'['_x_']' not
+R5040:5041 Coq.Lists.List ListNotations ::list_scope:'['_']' not
+R5055:5068 Capabilities.preliminaries <> mutBorrowedVar constr
+R5085:5085 Capabilities.preliminaries <> m var
+R5101:5101 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R5103:5104 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R5109:5110 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R5112:5112 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R5105:5108 Coq.Init.Datatypes <> true constr
+R5117:5117 Coq.Lists.List ListNotations ::list_scope:'['_x_']' not
+R5119:5119 Coq.Lists.List ListNotations ::list_scope:'['_x_']' not
+R5132:5133 Coq.Lists.List ListNotations ::list_scope:'['_']' not
+def 5213:5219 <> collect
+R5225:5228 Capabilities.preliminaries <> expr ind
+R5232:5235 Coq.Init.Datatypes <> list ind
+R5237:5242 Coq.Strings.String <> string ind
+R5255:5255 Capabilities.preliminaries <> e var
+R5266:5268 Capabilities.preliminaries <> var constr
+R5275:5275 Coq.Lists.List ListNotations ::list_scope:'['_x_']' not
+R5277:5277 Coq.Lists.List ListNotations ::list_scope:'['_x_']' not
+R5283:5289 Capabilities.preliminaries <> integer constr
+R5296:5297 Coq.Lists.List ListNotations ::list_scope:'['_']' not
+R5303:5305 Capabilities.preliminaries <> add constr
+R5331:5334 Coq.Init.Datatypes <> ::list_scope:x_'++'_x not
+R5320:5323 Capabilities.preliminaries <> vars def
+R5335:5338 Capabilities.preliminaries <> vars def
+R5350:5360 Capabilities.preliminaries <> borrowedVar constr
+R5367:5367 Coq.Lists.List ListNotations ::list_scope:'['_x_']' not
+R5369:5369 Coq.Lists.List ListNotations ::list_scope:'['_x_']' not
+R5375:5388 Capabilities.preliminaries <> mutBorrowedVar constr
+R5395:5395 Coq.Lists.List ListNotations ::list_scope:'['_x_']' not
+R5397:5397 Coq.Lists.List ListNotations ::list_scope:'['_x_']' not
+def 5417:5420 <> aval
+R5427:5431 Capabilities.preliminaries <> state def
+R5439:5442 Capabilities.preliminaries <> expr ind
+R5446:5449 Capabilities.preliminaries <> zext ind
+R5462:5462 Capabilities.preliminaries <> e var
+R5473:5475 Capabilities.preliminaries <> var constr
+R5482:5482 Capabilities.preliminaries <> s var
+R5490:5496 Capabilities.preliminaries <> integer constr
+R5503:5505 Capabilities.preliminaries <> val constr
+R5513:5515 Capabilities.preliminaries <> add constr
+R5541:5541 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R5553:5554 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R5566:5566 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R5542:5545 Capabilities.preliminaries <> aval def
+R5547:5547 Capabilities.preliminaries <> s var
+R5555:5558 Capabilities.preliminaries <> aval def
+R5560:5560 Capabilities.preliminaries <> s var
+R5580:5580 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R5586:5587 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R5593:5593 Coq.Init.Datatypes <> ::core_scope:'('_x_','_x_','_'..'_','_x_')' not
+R5581:5583 Capabilities.preliminaries <> val constr
+R5588:5590 Capabilities.preliminaries <> val constr
+R5598:5600 Capabilities.preliminaries <> val constr
+R5604:5606 Coq.ZArith.BinInt <> ::Z_scope:x_'+'_x not
+R5622:5633 Capabilities.preliminaries <> non_declared constr
+R5648:5658 Capabilities.preliminaries <> borrowedVar constr
+R5665:5665 Capabilities.preliminaries <> s var
+R5673:5686 Capabilities.preliminaries <> mutBorrowedVar constr
+R5693:5693 Capabilities.preliminaries <> s var

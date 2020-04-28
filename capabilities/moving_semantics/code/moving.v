@@ -25,6 +25,7 @@ From Coq Require Import Logic.FunctionalExtensionality.
 Require Import Coq.Program.Equality.
 Require Import Capabilities.big_step.
 Require Import Capabilities.small_step.
+Require Import Capabilities.CustomTactics.
 
 (*
 We have to check that the small and big step semantics match.
@@ -124,7 +125,9 @@ Definition measure' (c': (ainstruction * alist * rstate) + bool) :=
 Lemma measure_decrease
   (c1 c2: (ainstruction * alist * rstate) + bool):
   c1 ⟹__c c2 -> measure' c1 > measure' c2.
-Proof. intros. destruct H; simpl; omega. Qed.
+Proof.
+  intros; invert_pred_unbounded (compile_step); lights; omega.
+Qed.
   
 Lemma compiling_terminates
   (c': (ainstruction * alist * rstate) + bool):
@@ -156,21 +159,23 @@ Proof.
   generalize dependent d.
   generalize dependent s.
   generalize dependent L.
-  induction H as [| | l s1 d |]; intros; injection Heqd'; intros; subst.
+  induction H as [| | l s1 d |]; intros;
+    injection Heqd'; intros; subst.
   - apply star_refl.
-  - eapply star_step. apply SComp.
-    eapply star_trans. apply (IHbig_step1 (c c__2 :: L) s c__1).
+  - eapply star_step. constructor.
+    eapply star_trans.
+    apply (IHbig_step1 (c c__2 :: L) s c__1).
     reflexivity.
-    eapply star_step. apply SLoad.
-    apply (IHbig_step2 L s__2 c__2). reflexivity.
-  - eapply star_step. apply SLet.
+    eapply star_step. constructor.
+    eapply_any. reflexivity.
+  - eapply star_step. constructor.
     eapply star_trans.
     apply (IHbig_step (i (x, s x) :: L) (update s x ⊥) d).
     reflexivity.
-    eapply star_step. apply SLoad.
-    eapply star_step. apply SSet.
+    eapply star_step. constructor.
+    eapply star_step. constructor.
     apply star_refl.
-  - eapply star_step. apply SAss. apply star_refl.
+  - eapply star_step. constructor. apply star_refl.
 Qed.
 
 Lemma related_eq (s : state) (r r' : rstate) :
@@ -179,8 +184,7 @@ Proof.
   intros.
   apply functional_extensionality.
   intros.
-  unfold related_states in H.
-  unfold related_states in H0.
+  unfold related_states in *.
   destruct (H x) as [eq1 [eq2 eq3]].
   destruct (H0 x) as [eq1' [eq2' eq3']]. 
   destruct (r' x).
@@ -213,12 +217,15 @@ Lemma update_related (s s': state) (r r': rstate) (x: string):
   related_states s' r' ->
   related_states (update s x (s' x)) (update r x (r' x)).
 Proof.
-  unfold related_states; unfold related_states; intros.
-  split.
-  - unfold update. destruct (string_dec x x0). apply H0. apply H.
-  - split.
-    unfold update. destruct (string_dec x x0). apply H0. apply H.
-     unfold update. destruct (string_dec x x0). apply H0. apply H.
+  lights;
+  unfold related_states in *;
+  intros;
+  repeat split;
+    intros;
+    repeat destruct_updates;
+    unfold update in *; 
+    rewrite_any;
+    repeat apply_any.
 Qed.
 
 Lemma update_related_list
@@ -229,7 +236,7 @@ Proof.
   generalize dependent s.
   generalize dependent r. 
   induction L; intros. 
-  - simpl. apply H.
+  - simpl. apply_any.
   - simpl.
     assert(related_states (update s a -__u) (update r a -__a)).
     { apply (update_related s (fun x => -__u) r (fun x => -__a) a).
@@ -498,9 +505,8 @@ Proof.
   generalize dependent s.
   generalize dependent s'.
   generalize dependent r. 
-  dependent induction H.
-  - intros. rewrite Heqconf1 in Heqconf2. injection Heqconf2.
-    intros. subst. exists r. split. apply H. apply star_refl.
+  dependent induction H. 
+  - lights. exists r. lights. constructor.
   - intros. subst. destruct y as [[d1 l1] s1].
     assert(exists r' : rstate, related_states s1 r' /\
       (inl (abstract_instruction d, abstract_list l, r)
@@ -540,12 +546,12 @@ Proof.
   generalize dependent s.
   generalize dependent r. 
   induction d; intros. 
-  - assert(s = s'). { eapply between_skips. apply H. }
-    rewrite H2. apply BSkip.
+  - lights. apply_anywhere between_skips.
+    rewrite_any. constructor.
   - destruct (comp_to_skip d1 d2 l s s' H) as [s2 [H4 [H4' h4']]].
-    eapply BSeq. eapply IHd1. 
+    econstructor. eapply IHd1. 
     inversion H. subst. inversion H2. subst.    
-    eapply H4. eapply H0.
+    eapply_any. eapply_any.
     inversion H1. subst. inversion H2. subst.
     apply H3.
     eapply IHd2. apply h4'.
@@ -581,23 +587,41 @@ Proof.
     assert(r v = abstract_value (s v)).
     { apply related_abstract_values. apply H0. }
     simpl. rewrite <- H9. apply H5. 
-  - inversion H. subst. inversion H2. subst.
-    inversion H1. subst. inversion H4. subst.
-    assert(update_list (update s v (aval s e)) (vars e) -__u = s').
-    { eapply between_skips. apply H3. }
-    rewrite <- H6. apply BAssign. 
-    + auto.
-    + simpl.
-      assert(r v = abstract_value (s v)). 
-      { apply (related_abstract_values s r v). apply H0. }
-      rewrite H11 in H7.
-      destruct (s v); simpl in H7;
-        try(discriminate H7); try(reflexivity).
-    + destruct (expr_eval e s r H12 H0).
-      rewrite H7. unfold not. intros. discriminate H8.
-    + destruct (expr_eval e s r H12 H0).
-      rewrite H7. unfold not. intros. discriminate H8.
-    + subst. inversion H5. subst. inversion H6.
+  - lights.
+    invert_pred (star small_step).
+    lights.
+    invert_pred (small_step).
+    lights.
+    apply_anywhere between_skips.
+    rewrite_back_any.
+    constructor.
+    + lights.
+      invert_pred (star compile_step). lights.
+      invert_pred_unbounded (compile_step). lights.
+      apply_any. apply_any.
+      apply_any. lights.
+      ++ exfalso. invert_pred (star compile_step).
+         lights. invert_pred (compile_step).
+      ++ exfalso. invert_pred (star compile_step).
+         lights. invert_pred (compile_step).
+    + lights.
+      invert_pred (star compile_step). lights.
+      invert_pred_unbounded (compile_step). lights.
+      ++ assert(exists z : BinNums.Z, aval s e = val z).
+         { eapply expr_eval; repeat apply_any. }
+         destruct_exists. lights.         
+      ++ subst.
+         invert_pred (star compile_step). subst.
+         invert_pred_unbounded (compile_step). 
+    + lights.
+      invert_pred (star compile_step). lights.
+      invert_pred_unbounded (compile_step). lights.
+      ++ assert(exists z : BinNums.Z, aval s e = val z).
+         { eapply expr_eval; repeat apply_any. }
+         destruct_exists. lights.
+      ++ subst.
+         invert_pred (star compile_step). subst.
+         invert_pred_unbounded (compile_step). 
 Qed.
 
 (* Lemma 3.6.6 *)

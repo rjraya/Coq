@@ -1,4 +1,4 @@
-find word in file
+Find word in file
 
 https://www.gnu.org/software/emacs/manual/html_node/emacs/Word-Search.html
 
@@ -17,3 +17,7 @@ C-x b
 Remove other window different from current:
 
 C-x 1
+
+Search for command in Coq code:
+
+(find . -name "*.v" | xargs grep "Hint") | grep "gt_not_le"

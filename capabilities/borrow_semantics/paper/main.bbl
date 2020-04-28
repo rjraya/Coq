@@ -1,0 +1,62 @@
+\begin{thebibliography}{}
+
+\bibitem[Balasubramanian et~al., 2017]{balasubramanian2017system}
+Balasubramanian, A., Baranowski, M.~S., Burtsev, A., Panda, A., Rakamari, Z.,
+  and Ryzhyk, L. (2017).
+\newblock System programming in {Rust: Beyond safety}.
+\newblock {\em ACM SIGOPS Operating Systems Review}, 51(1):94--99.
+
+\bibitem[Benitez, 2016]{benitez2016rusty}
+Benitez, S. (2016).
+\newblock Short paper: {Rusty Types for Solid Safety}.
+\newblock In {\em Proceedings of the 2016 ACM Workshop on Programming Languages
+  and Analysis for Security}, pages 69--75. ACM.
+
+\bibitem[Dhurjati et~al., 2003]{dhurjati2003memory}
+Dhurjati, D., Kowshik, S., Adve, V., and Lattner, C. (2003).
+\newblock Memory safety without runtime checks or garbage collection.
+\newblock {\em ACM SIGPLAN Notices}, 38(7):69--80.
+
+\bibitem[Ding et~al., 2017]{ding2017sgx}
+Ding, Y., Duan, R., Li, L., Cheng, Y., Zhang, Y., Chen, T., Wei, T., and Wang,
+  H. (2017).
+\newblock Poster: {Rust} sgx sdk: Towards memory safety in intel sgx enclave.
+\newblock In {\em Proceedings of the 2017 ACM SIGSAC Conference on Computer and
+  Communications Security}, pages 2491--2493. ACM.
+
+\bibitem[Jespersen et~al., 2015]{jespersen2015session}
+Jespersen, T. B.~L., Munksgaard, P., and Larsen, K.~F. (2015).
+\newblock Session types for {Rust}.
+\newblock In {\em Proceedings of the 11th ACM SIGPLAN Workshop on Generic
+  Programming}, pages 13--22. ACM.
+
+\bibitem[Jung et~al., 2017]{jung2017rustbelt}
+Jung, R., Jourdan, J.-H., Krebbers, R., and Dreyer, D. (2017).
+\newblock Rustbelt: Securing the foundations of the {Rust} programming
+  language.
+\newblock {\em Proceedings of the ACM on Programming Languages}, 2(POPL):66.
+
+\bibitem[Leffler, 2017]{compiler}
+Leffler, S. (2017).
+\newblock {\em Rust's Type System is Turing-Complete}.
+\newblock https://sdleffler.github.io/RustTypeSystemTuringComplete/.
+
+\bibitem[Levy et~al., 2017]{levy2017kernel}
+Levy, A., Campbell, B., Ghena, B., Pannuto, P., Dutta, P., and Levis, P.
+  (2017).
+\newblock The case for writing a kernel in {Rust}.
+\newblock In {\em Proceedings of the 8th Asia-Pacific Workshop on Systems},
+  page~1. ACM.
+
+\bibitem[Matsakis and Klock~II, 2014]{matsakis2014rust}
+Matsakis, N.~D. and Klock~II, F.~S. (2014).
+\newblock The rust language.
+\newblock {\em ACM SIGAda Ada Letters}, 34(3):103--104.
+
+\bibitem[Reed, 2015]{reed2015patina}
+Reed, E. (2015).
+\newblock Patina: A formalization of the {Rust} programming language.
+\newblock {\em University of Washington, Department of Computer Science and
+  Engineering, Tech. Rep. UW-CSE-15-03-02}.
+
+\end{thebibliography}

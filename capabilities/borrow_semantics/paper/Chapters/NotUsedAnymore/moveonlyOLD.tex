@@ -1,0 +1,212 @@
+\section{Introduction}
+In the remainder of this thesis, we will look at subsets of Rust and determine, for each of those, the syntax, semantics and some interesting properties. This first chapter will go into detail at every step. Later chapters will not do this anymore and assume that what was mentioned here is known to the reader. 
+
+\section{Syntax}
+We will look at a very simple subset of Rust. In this subset of Rust, you can only assign variables. If you do so, the ownership of the resource will be moved to that variable. Hence, the name of this chapter `move only'. 
+You cannot borrow and nothing is mutable. That means everything is constant. While this does not seem like a very useful language, it will provide a good base to work from when adding new features. This language has the following types of statements:
+Statements ($s$):
+$$S ::= \textrm{skip} \mid S_1; S_2 \mid a: \textrm{let } x:\tau \textrm{ in } S \mid x := e$$
+Where e can be one of the following expressions:
+$$e ::= x \mid i \mid e_1 + e_2$$
+Lastly, $\tau$ is defined as 
+$$\tau ::= \textrm{Int}$$
+
+This syntax is very simple, but enough for us to say something useful about ownership. We use only one data type, as more data types will add no additional interesting facts for ownership. However, this syntax can be expanded to include more types. 
+
+In particular, take note of the syntax for let. We split a statement such as \verb|let x = 5| in \verb|let x in (x = 5)| (brackets added for clearity). This can be done for every type of let-statement. It was done to show that there are actually two steps in a statement such as \verb|let x = 5|. First of all, the variable \verb|x| is declared. Then, a value is assigned to this \verb|x|. 
+
+After the splitting (when necessary), we've 'desugared' the statement in a similar way as was done in \ref{desugar}. This is done to make lifetimes explicit. That means we change \verb|let x in (x = 5)| to \verb|a: {let x in (x = 5)}|. We do not add the \verb|'| for the \verb|a|, as we will not be talking about generics and this only complicates the syntax. Lastly, we desugar more, to also include the type $\tau$, so that the previous statement becomes \verb|a: {let x:i32 in (x = 5)}|. 
+
+In order to illustrate this, let's write the following program (taken from \ref{desugar}) in our syntax: 
+
+\begin{minted}[linenos, frame=lines]{rust}
+let x = 0;
+let y = x;
+let z = y;
+\end{minted}
+
+\begin{minted}[linenos, frame=lines]{rust}
+a: {
+    let x: Int in x = 0;
+    b: {
+        let y: Int in y = x;
+    }
+}
+\end{minted}
+
+This looks a lot like the desugaring in \ref{desugar}, but has no \verb|'| to indicate lifetimes. 
+ 
+
+\section{Semantics}
+First, we will explore the general framework that we will use to give the semantics of the given syntax. Then we will give the actual rules. 
+
+\subsection{Framework}
+We use natural semantics to give meaning to our programs. This is a form of big steps semantics. In general, a rule has the following form:
+
+$$\langle S, s \rangle \to s'$$
+
+Where $S$ is a statement as defined in the previous section. $s$ and $s'$ are states, for which an exact definition will be given shortly. 
+
+First we define a couple of sets and symbols.  
+
+\subsubsection{Symbols}
+The first newly defined symbol is $-$, which will be used to indicate that a variable has not been declared at all. Intuitively, it therefore is some special kind of value a variable can have. Also, $\perp$ will be used to indicate that a variable has been declared using \verb|let|, but has not been assigned a value.
+
+\subsubsection{Sets}
+As is conventional, the set $\mathbb{Z}$ will be used to denote the set of integers. We extent $\mathbb{Z}$ with two new symbols mentioned in the previous section, to get $\mathbb{Z}_{ext}$. So $\mathbb{Z}_{ext} := \mathbb{Z} ~\cup ~ \{\perp, -\}$.
+
+\subsubsection{Expressions}
+We also have \textbf{Var} to denote the set of all variables and \textbf{Num} to denote the set of all numbers in the form they are represented in in Rust.
+
+We also define a set \textbf{Add}, which consists of tuples. Now we combine several sets to form $\textbf{Exp} = \textbf{Num} \cup \textbf{Add}$. We said \textbf{Add} consisted of tuples, but we did not say what was in these tuples. We are now able to state that each element of the tuple should be an element of the set \textbf{Exp}. Now we have recursively defined a set that contains representations for all possible syntactic structures. Note that elements from \textbf{Add} will usually be denoted as ``$e_1 + e_2$'' instead of ``$(e_1, e_2)$''.
+
+\subsubsection{Functions}
+The function $\mathcal{N}$ is a function from $\textbf{Num}$ to $\mathbb{Z}$ which translates a Rust representation for a number to the actual number. We also have an evaluation functions $\mathcal{A}$, which gives for an element from \textbf{Exp} and a state $s$ the value. Here, value is an element of $\mathbb{Z}_{ext}$
+
+\subsubsection{State and evaluation}
+Here, we define the state as a function $s: \textbf{Var} \to \mathbb{Z}_{ext}$. Then we define our evaluation function $\mathcal{A}$ as:
+
+\begin{align*}
+    \letterfunc{A}{i}s          &= \letterfunc{N}{i}
+\\  \letterfunc{A}{x}s          &= s(x)
+\\  \letterfunc{A}{e_1 + e_2}s  &= \letterfunc{A}{e_1}s + \letterfunc{A}{e_2}s \textrm{ if } \letterfunc{A}{e_1}s \in \mathbb{Z} \textrm{ and } \letterfunc{A}{e_2}s \in \mathbb{Z}
+\\  \letterfunc{A}{e_1 + e_2}s  &= - \textrm{ otherwise}
+\end{align*}
+
+\subsection{Rules}
+Now we get the following semantic rules for each of the different statements. 
+
+\medskip
+\begin{tabular}{p{5em}p{18em}p{13em}}
+[skip$_{\textrm{ns}}$] &
+\centering$\langle$ \texttt{skip} $, s \rangle \to s$ & \medskip\\
+
+[comp$_{\textrm{ns}}$] &
+\centering \AxiomC{$\langle S_1, s \rangle \to s' $}
+\AxiomC{$\langle S_2, s' \rangle \to s''$}
+\BinaryInfC{$\langle S_1$; $S_2, s \rangle \to s''$}
+\DisplayProof \medskip& \\
+
+[let$_{\textrm{ns}}$] &
+\centering
+\AxiomC{$\langle S, s[x\mapsto \perp] \rangle \to s'$}
+\UnaryInfC{$\langle a : \texttt{let x } : \tau \texttt{ in } S, s \rangle \to s'[x \mapsto s(x)]$}
+\DisplayProof \medskip& \\
+
+[ass$_{\textrm{ns}}$] &
+\centering$\langle$ \texttt{x := } e$, s \rangle \to s[x \mapsto \letterfunc{A}{e}s][ev(e)\mapsto-]$ & if $\letterfunc{A}{x}s = \perp$, $\letterfunc{A}{e} \neq \perp$ and $\letterfunc{A}{e} \neq -$\medskip\\
+
+\end{tabular} 
+
+The rules for skip and composition are assumed to be self-explanatory. The rule for let is derived from the idea that a let-statement should put the variable \verb|x| at $\perp$ (declared but not assigned). When the body of a let-statement is finished, \verb|x| should be put at whatever it was before we encountered the let-statement. 
+
+As for the assignment rule, there are several conditions that need to apply before we can consider the rule. If one of these conditions does not apply, we cannot apply this rule and that means we cannot make a derivation of the program. The program is incorrect, then. The first rule states that \verb|x| must have been declared, but not assigned. The second and third rules state that the expression must result in a value. This is important, in for example the following program: \verb|a: let x in (x = y)|. Here, \verb|y| has not been given a value (it has not even been declared), so we cannot rightly assign \verb|y|s value to \verb|x|. 
+
+Note that these rules are important to model Rust in the best possible way. It is not possible to assign to a value that has not been declared and it is also not possible to assign a value to a non-mutable variable that already has a value. 
+
+\section{Translation to Coq}
+Now, we will translate the syntax, framework and rules to Coq. The whole code can be found in some appendix I guess. 
+
+\subsection{Syntax}
+We let the types out, since there was only one type. The arithmetic expressions:
+\begin{minted}[linenos, frame=lines]{rust}
+(*Arithmetic expressions: x | n | e1 + e2 *)
+Inductive aexpr : Type := avar (s : string) | anum (n :Z) | aplus (a1 a2:aexpr).
+\end{minted}
+and the instruction set:
+\begin{minted}[linenos, frame=lines]{rust}
+(*Instruction set: x := e | S1;S2 | skip | a:let x:t in S *)
+Inductive instr : Type :=
+  assign (_ : string) (_ : aexpr) | sequence (_ _: instr)
+ | skip | let_in (_ : lifetime) (_ : string) (_: instr).
+\end{minted}
+where 
+\begin{minted}[linenos, frame=lines]{rust}
+Variable string : Type.
+Variable lifetime : Type.
+\end{minted}
+
+\subsection{Semantics}
+\subsubsection{Framework for semantics}
+We used the \verb|ZArith List| library to denote the set of Integers. From that, we made $\mathbb{Z}_{ext}$
+\begin{minted}[linenos, frame=lines]{rust}
+Inductive zext : Type :=  (*This is Zext*)
+nondec  (*To denote a variable has not been declarated*)
+| dec  (*To denote a variable has been declarated*)
+| val (_ : Z).
+\end{minted}
+
+Instead of seeing the state as a function, we defined the state as a list of tuples. The first argument in the tuple is the variable and the second is the value (so an element of $\mathbb{Z}_{ext}$):
+\begin{minted}[linenos, frame=lines]{rust}
+(*The state is a list of pairs, where the first denotes a variable and the second a value*)
+Definition state := list (string * zext).
+\end{minted}
+
+\subsubsection{Functions}
+The function $\mathcal{A}$ is defined as follows:
+\begin{minted}[linenos, frame=lines]{rust}
+Inductive aeval : state -> aexpr -> zext -> Prop :=
+ae_num : forall s n, aeval s (anum n) (val n) (*n evaluates to n*)
+| ae_var1 : forall s x v, aeval ((x,v)::s) (avar x) v
+| ae_var2 : forall s x y v1 v2 , x <> y -> aeval s (avar x) v2 ->
+aeval ((y,v1)::s) (avar x) v2
+| (*e1 + e2 evaluates to n1 + n2 if e1->n1 and e2->n2*) 
+ae_plus : forall s e1 e2 v1 v2 w1 w2, 
+v1 = (val w1) -> v2 = (val w2) ->
+aeval s e1 v1 -> aeval s e2 v2 ->
+aeval s (aplus e1 e2) (val (w1 + w2))
+| (*either e1 or e2 evaluates to nothing*) 
+ae_plus_fail : forall s e1 e2 v1 v2, 
+v1 = nondec \/ v2 = nondec \/ v1 = dec \/ v2 = dec ->
+aeval s (aplus e1 e2) nondec
+.
+\end{minted}
+When an expression $e$ is a numeral, $\mathcal{A}$ should evaluate to that numeral. When $e$ is a variable, we will look for this variable in the list. It can either be at the top of the list (\verb|ae_var1|) or deeper down the list (\verb|ae_var2|). When the expression is an addition, we have the possibility where it is well-defined or not well-defined. In the case it is well-defined, we add the values the two parts evaluate to. If it is not well-defined, the result has to be equal to not declared (\verb|nondec|). 
+
+
+We also need something to update the state. The first one, which is called \verb|update| is used when we wrote something like $s[x \mapsto y]$ in the previous section. I.e. it is used when we want to update only one variable. Its definition is:
+
+\begin{minted}[linenos, frame=lines]{rust}
+Inductive update : state -> string -> zext-> state -> Prop :=
+| s_up1 : forall s x v v1, update ((x,v)::s) x v1 ((x,v1):: s)
+| s_up2 : forall s s1 x y v v1, update s x v1 s1 ->
+x <> y -> update ((y,v)::s) x v1 ((y,v)::s1).
+\end{minted}
+This traverses the list in a similar way to the previous section. 
+
+We also have an update function that looks for all variables in an expression and then updates every one of them to $-$. This does what we previously denoted with $s[ev(e)\mapsto-]$
+
+\begin{minted}[linenos, frame=lines]{rust}
+Inductive updateE : state -> aexpr -> state -> Prop :=
+| s_up3: forall s x s1, update s x nondec s1 -> updateE s (avar x) s1 (*variables*)
+| s_up4: forall s x y s1 s2, (updateE s x s1) -> (updateE s1 y s2) -> 
+updateE s (aplus x y) s2(*addition*)
+| s_up5: forall s i, updateE s (anum i) s(*integers*)
+.
+\end{minted}
+If the expression is a variable, update that variable. If the expression consists of an addition, apply the same principle to either side. If the expression is a numeral, do nothing (as a numeral does not contain variables that would need to be updated. 
+
+\subsubsection{Rules}
+Now, we have finally arrived at the part where we can give the derivation rules:
+\begin{minted}[linenos, frame=lines]{rust}
+Inductive exec : state->instr->state->Prop :=
+| exec_skip : forall s, exec s skip s (*skip rule*)
+| exec_ass : forall s x e v s1 s2,
+aeval s e v -> update s x v s1 -> updateE s1 e s2
+-> aeval s (avar x) dec (*A[x]s := dec*)
+-> not (aeval s e nondec)
+-> exec s (assign x e) s2
+(*assignment*)
+| exec_let : forall s x s1 s2 s3 y i a, (*s is starting state*)
+update s x dec s1 (*s[x |-> dec] = s1*)
+-> exec s1 i s2 (*<S, s1> -> s2 = s'*)
+-> aeval s (avar x) y (*y = s(x)*)
+-> update s2 x y s3 (*s3 = s'[x |-> s(x)]*)
+-> exec s (let_in a x i) s3(*let-statement*)
+| exec_comp : forall s s1 s2 i1 i2,
+exec s i1 s1 -> exec s1 i2 s2 
+-> exec s (sequence i1 i2) s2 (*composition*).
+\end{minted}
+
+
+
