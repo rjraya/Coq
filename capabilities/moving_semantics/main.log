@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.21 (MiKTeX 2.9.7350) (preloaded format=pdflatex 2020.4.11)  13 APR 2020 17:32
+This is pdfTeX, Version 3.14159265-2.6-1.40.21 (MiKTeX 2.9.7445) (preloaded format=pdflatex 2020.4.11)  11 JUN 2020 10:47
 entering extended mode
 **./main.tex
 (main.tex
@@ -594,28 +594,26 @@ LaTeX Info: Redefining \nameref on input line 11.
 \openout5 = `main.out'.
 
  (Chapters/moveonly.tex
-LaTeX Font Info:    Trying to load font information for U+msa on input line 11.
-
+LaTeX Font Info:    Trying to load font information for U+msa on input line 5.
 
 (/home/usuario/.miktex/texmfs/install/tex/latex/amsfonts/umsa.fd
 File: umsa.fd 2013/01/14 v3.01 AMS symbols A
 )
-LaTeX Font Info:    Trying to load font information for U+msb on input line 11.
-
+LaTeX Font Info:    Trying to load font information for U+msb on input line 5.
 
 (/home/usuario/.miktex/texmfs/install/tex/latex/amsfonts/umsb.fd
 File: umsb.fd 2013/01/14 v3.01 AMS symbols B
 )
-LaTeX Font Info:    Trying to load font information for U+stmry on input line 1
-1.
+LaTeX Font Info:    Trying to load font information for U+stmry on input line 5
+.
 
 (/home/usuario/.miktex/texmfs/install/tex/latex/stmaryrd/Ustmry.fd)
-Overfull \hbox (11.1959pt too wide) in paragraph at lines 28--28
+Overfull \hbox (11.1959pt too wide) in paragraph at lines 22--22
 []\OT1/cmr/m/n/10 [skip$[]$]| 
  []
 
 
-Overfull \hbox (16.9737pt too wide) in paragraph at lines 31--31
+Overfull \hbox (16.9737pt too wide) in paragraph at lines 25--25
 []\OT1/cmr/m/n/10 [comp$[]$]| 
  []
 
@@ -628,34 +626,34 @@ Overfull \hbox (16.9737pt too wide) in paragraph at lines 31--31
 \myCenter2=\dimen261
 \myScoreEnd2=\dimen262
 
-Overfull \hbox (4.75143pt too wide) in paragraph at lines 37--37
+Overfull \hbox (4.75143pt too wide) in paragraph at lines 31--31
 []\OT1/cmr/m/n/10 [let$[]$]| 
  []
 
 
-Overfull \hbox (6.5292pt too wide) in paragraph at lines 43--43
+Overfull \hbox (6.5292pt too wide) in paragraph at lines 37--37
 []\OT1/cmr/m/n/10 [ass$[]$]| 
  []
 
 
-Overfull \hbox (21.0005pt too wide) in paragraph at lines 27--49
+Overfull \hbox (21.0005pt too wide) in paragraph at lines 21--43
 []
  []
 
 [1{/home/usuario/.miktex/texmfs/data/pdftex/config/pdftex.map}
 
 ]
-Underfull \hbox (badness 10000) in paragraph at lines 66--67
+Underfull \hbox (badness 10000) in paragraph at lines 60--61
 
  []
 
 
-Overfull \hbox (66.00055pt too wide) in paragraph at lines 68--84
+Overfull \hbox (66.00055pt too wide) in paragraph at lines 62--78
 [][] 
  []
 
 
-Overfull \hbox (0.66728pt too wide) in paragraph at lines 117--118
+Overfull \hbox (0.66728pt too wide) in paragraph at lines 111--112
 \OT1/cmr/m/n/10 conditions for assignment) plus a compile time check of these d
 ropped conditions.
  []
@@ -671,32 +669,31 @@ Package rerunfilecheck Info: File `main.out' has not changed.
 (rerunfilecheck)             Checksum: A1D93167FE3F47B76364D63A79C2E72F;506.
  ) 
 Here is how much of TeX's memory you used:
- 12787 strings out of 482859
- 208382 string characters out of 2952834
- 527869 words of memory out of 3000000
- 28157 multiletter control sequences out of 15000+200000
- 539526 words of font info for 53 fonts, out of 3000000 for 9000
+ 12779 strings out of 482859
+ 208262 string characters out of 2952834
+ 527837 words of memory out of 3000000
+ 28151 multiletter control sequences out of 15000+200000
+ 539191 words of font info for 52 fonts, out of 3000000 for 9000
  0 hyphenation exceptions out of 8191
  44i,13n,47p,875b,360s stack positions out of 5000i,500n,10000p,200000b,50000s
- </home/usuario/.miktex/texmfs/data/fonts/pk/ljfour/jknappen/ec/dpi600/tcrm10
-00.pk></home/usuario/.miktex/texmfs/install/fonts/type1/public/amsfonts/cm/cmbx
-10.pfb></home/usuario/.miktex/texmfs/install/fonts/type1/public/amsfonts/cm/cmb
-x12.pfb></home/usuario/.miktex/texmfs/install/fonts/type1/public/amsfonts/cm/cm
-itt10.pfb></home/usuario/.miktex/texmfs/install/fonts/type1/public/amsfonts/cm/
-cmmi10.pfb></home/usuario/.miktex/texmfs/install/fonts/type1/public/amsfonts/cm
-/cmmi7.pfb></home/usuario/.miktex/texmfs/install/fonts/type1/public/amsfonts/cm
-/cmr10.pfb></home/usuario/.miktex/texmfs/install/fonts/type1/public/amsfonts/cm
-/cmr7.pfb></home/usuario/.miktex/texmfs/install/fonts/type1/public/amsfonts/cm/
-cmsl10.pfb></home/usuario/.miktex/texmfs/install/fonts/type1/public/amsfonts/cm
-/cmsy10.pfb></home/usuario/.miktex/texmfs/install/fonts/type1/public/amsfonts/c
-m/cmsy7.pfb></home/usuario/.miktex/texmfs/install/fonts/type1/public/amsfonts/c
-m/cmti10.pfb></home/usuario/.miktex/texmfs/install/fonts/type1/public/amsfonts/
-cm/cmtt10.pfb></home/usuario/.miktex/texmfs/install/fonts/type1/public/amsfonts
-/symbols/msbm10.pfb></home/usuario/.miktex/texmfs/install/fonts/type1/public/ho
-ekwater/stmary10.pfb>
-Output written on main.pdf (4 pages, 167657 bytes).
+</home/usuario/.miktex/texmfs/install/fonts/type1/public/amsfonts/cm/cmbx10.p
+fb></home/usuario/.miktex/texmfs/install/fonts/type1/public/amsfonts/cm/cmbx12.
+pfb></home/usuario/.miktex/texmfs/install/fonts/type1/public/amsfonts/cm/cmitt1
+0.pfb></home/usuario/.miktex/texmfs/install/fonts/type1/public/amsfonts/cm/cmmi
+10.pfb></home/usuario/.miktex/texmfs/install/fonts/type1/public/amsfonts/cm/cmm
+i7.pfb></home/usuario/.miktex/texmfs/install/fonts/type1/public/amsfonts/cm/cmr
+10.pfb></home/usuario/.miktex/texmfs/install/fonts/type1/public/amsfonts/cm/cmr
+7.pfb></home/usuario/.miktex/texmfs/install/fonts/type1/public/amsfonts/cm/cmsl
+10.pfb></home/usuario/.miktex/texmfs/install/fonts/type1/public/amsfonts/cm/cms
+y10.pfb></home/usuario/.miktex/texmfs/install/fonts/type1/public/amsfonts/cm/cm
+sy7.pfb></home/usuario/.miktex/texmfs/install/fonts/type1/public/amsfonts/cm/cm
+ti10.pfb></home/usuario/.miktex/texmfs/install/fonts/type1/public/amsfonts/cm/c
+mtt10.pfb></home/usuario/.miktex/texmfs/install/fonts/type1/public/amsfonts/sym
+bols/msbm10.pfb></home/usuario/.miktex/texmfs/install/fonts/type1/public/hoekwa
+ter/stmary10.pfb>
+Output written on main.pdf (4 pages, 165911 bytes).
 PDF statistics:
- 139 PDF objects out of 1000 (max. 8388607)
- 26 named destinations out of 1000 (max. 500000)
+ 131 PDF objects out of 1000 (max. 8388607)
+ 25 named destinations out of 1000 (max. 500000)
  65 words of extra memory for PDF output out of 10000 (max. 10000000)
 

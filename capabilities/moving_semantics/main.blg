@@ -1,48 +1,48 @@
-This is BibTeX, Version 0.99d (MiKTeX 2.9.7350)
-Capacity: max_strings=4000, hash_size=5000, hash_prime=4253
+This is BibTeX, Version 0.99d
+Capacity: max_strings=200000, hash_size=200000, hash_prime=170003
 The top-level auxiliary file: main.aux
+Reallocating 'name_of_file' (item size: 1) to 6 items.
+Reallocating 'name_of_file' (item size: 1) to 8 items.
 The style file: apalike.bst
 Database file #1: bibli.bib
-Warning--empty journal in wessel2019semantics
-You've used 2 entries,
+You've used 1 entry,
             1935 wiz_defined-function locations,
-            483 strings with 3962 characters,
-and the built_in function-call counts, 741 in all, are:
-= -- 69
-> -- 31
+            479 strings with 3810 characters,
+and the built_in function-call counts, 407 in all, are:
+= -- 40
+> -- 13
 < -- 1
-+ -- 14
-- -- 10
-* -- 63
-:= -- 135
-add.period$ -- 5
-call.type$ -- 2
-change.case$ -- 15
-chr.to.int$ -- 2
-cite$ -- 3
-duplicate$ -- 27
-empty$ -- 49
-format.name$ -- 14
-if$ -- 136
++ -- 6
+- -- 4
+* -- 35
+:= -- 73
+add.period$ -- 3
+call.type$ -- 1
+change.case$ -- 7
+chr.to.int$ -- 1
+cite$ -- 1
+duplicate$ -- 14
+empty$ -- 29
+format.name$ -- 7
+if$ -- 76
 int.to.chr$ -- 1
 int.to.str$ -- 0
-missing$ -- 2
-newline$ -- 12
-num.names$ -- 6
-pop$ -- 14
+missing$ -- 1
+newline$ -- 8
+num.names$ -- 3
+pop$ -- 4
 preamble$ -- 1
-purify$ -- 15
+purify$ -- 7
 quote$ -- 0
-skip$ -- 22
+skip$ -- 12
 stack$ -- 0
-substring$ -- 47
+substring$ -- 33
 swap$ -- 1
 text.length$ -- 0
 text.prefix$ -- 0
 top$ -- 0
-type$ -- 12
-warning$ -- 1
-while$ -- 6
+type$ -- 6
+warning$ -- 0
+while$ -- 4
 width$ -- 0
-write$ -- 25
-(There was 1 warning)
+write$ -- 15

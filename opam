@@ -1,4 +1,8 @@
+To upgrade to some version:
+
 opam pin add coq 8.6
+
+See switches:
 
 opam switch ---
 eval $(opam env)
